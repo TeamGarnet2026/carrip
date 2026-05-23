@@ -304,8 +304,8 @@
 | origin | string | 必須 | 出発地（Google Places有効住所） |
 | prefecture | string[] | 必須 | 訪問都道府県（1〜5件、47都道府県から） |
 | departure_date | string | 必須 | 出発日（ISO 8601形式、今日〜180日後） |
-| days | integer | 必須 | 旅行日数（1〜7） |
-| people | integer | 必須 | 人数（1〜15） |
+| days | integer | 必須 | 旅行日数（1〜3） |
+| people | integer | 必須 | 人数（1〜10） |
 | vehicle.type | string | 必須 | 車種プリセットID or 'custom' |
 | vehicle.fuel_km_l | number | 条件付 | カスタム燃費（type='custom'時必須、1〜200） |
 | budget_per_person | integer | 任意 | 1人あたり予算（円） |
@@ -467,7 +467,7 @@ Vercel + Supabase のマネージドサービスが基盤のため、インフ�
 | 通信暗号化 | 全通信 HTTPS（TLS 1.2以上）。Vercel がデフォルト適用 |
 | 保存データ暗号化 | Supabase（PostgreSQL）の保存時暗号化を有効化 |
 | 個人情報最小化 | 保存するのは出発地・旅程データのみ。氏名・電話番号は収集しない |
-| 共有URLの失効 | expires_at = 作成日 + 7日。失効後は 404 を返す |
+| 共有URLの失効 | expires_at = 作成日 + 30日。失効後は 404 を返す |
 | ログの個人情報 | アクセスログに住所・旅程データを含めない（IPのみ） |
 
 **OWASP Top 10 対応状況**
@@ -567,7 +567,7 @@ Vercel + Supabase のマネージドサービスが基盤のため、インフ�
 | 項目 | 内容 |
 |------|------|
 | フロントエンド技術 | React , TypeScript, Tailwind CSS |
-| バックエンド技術 | サーバーレス？ |
+| バックエンド技術 | Nuxt.js |
 | データベース（RDBMS） | Supabase |
 | キャッシュ・セッション管理 | Redis（ルート検索結果） |
 | 認証・認可方式 | JWT |
