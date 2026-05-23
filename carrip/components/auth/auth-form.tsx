@@ -1,0 +1,121 @@
+'use client'
+
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { createClient } from '@/utils/supabase/client'
+
+type AuthMode = 'login' | 'signup'
+
+type AuthFormProps = {
+  mode: AuthMode
+  redirectTo: string
+}
+
+export function AuthForm({ mode, redirectTo }: AuthFormProps) {
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  const isLogin = mode === 'login'
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setMessage(null)
+
+    const supabase = createClient()
+
+    const { error } = isLogin
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password })
+
+    setLoading(false)
+
+    if (error) {
+      setMessage(error.message)
+      return
+    }
+
+    if (!isLogin) {
+      setMessage(
+        '登録しました。確認メールが有効な場合はメール内のリンクを開いてからログインしてください。'
+      )
+      return
+    }
+
+    router.push(redirectTo)
+    router.refresh()
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
+      <div>
+        <label htmlFor="email" className="mb-1 block text-sm font-medium">
+          メールアドレス
+        </label>
+        <input
+          id="email"
+          type="email"
+          autoComplete="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+        />
+      </div>
+      <div>
+        <label htmlFor="password" className="mb-1 block text-sm font-medium">
+          パスワード
+        </label>
+        <input
+          id="password"
+          type="password"
+          autoComplete={isLogin ? 'current-password' : 'new-password'}
+          required
+          minLength={6}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+        />
+      </div>
+      {message && (
+        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+          {message}
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={loading}
+        className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+      >
+        {loading ? '処理中…' : isLogin ? 'ログイン' : '新規登録'}
+      </button>
+      <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
+        {isLogin ? (
+          <>
+            アカウントをお持ちでない方は{' '}
+            <Link
+              href={`/signup?redirectTo=${encodeURIComponent(redirectTo)}`}
+              className="underline"
+            >
+              新規登録
+            </Link>
+          </>
+        ) : (
+          <>
+            すでにアカウントがある方は{' '}
+            <Link
+              href={`/login?redirectTo=${encodeURIComponent(redirectTo)}`}
+              className="underline"
+            >
+              ログイン
+            </Link>
+          </>
+        )}
+      </p>
+    </form>
+  )
+}
