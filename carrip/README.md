@@ -26,15 +26,14 @@ http://localhost:3000 を開きます。
 
 ## ローカル確認手順（ログイン）
 
-1. Supabase Dashboard で **Authentication → Email** を有効化する
-2. 開発中は **Confirm email** をオフにするとサインアップ直後にログインしやすい
-3. `npm run dev` を起動
-4. http://localhost:3000/plan/demo/routes を開く（ログイン不要）
-5. 「このプランを保存する」→ `/login?redirectTo=...` に遷移することを確認
-6. http://localhost:3000/signup でアカウント作成
-7. ログイン後、保存画面または `redirectTo` 先に戻ることを確認
-8. http://localhost:3000/trips でマイプラン一覧（RLS により自分のデータのみ）
-9. ログアウト後、`/trips` に直接アクセスすると再び `/login` へ
+1. Supabase Dashboard で **Authentication → Email** を有効化し、**Confirm email** をオフにする（サインアップ直後にログイン）
+2. `npm run dev` を起動
+3. http://localhost:3000/plan/demo/routes を開く（ログイン不要）
+4. 「このプランを保存する」→ `/login?redirectTo=...` に遷移することを確認
+5. http://localhost:3000/signup でアカウント作成
+6. 登録後、保存画面または `redirectTo` 先に戻ることを確認
+7. http://localhost:3000/trips でマイプラン一覧（RLS により自分のデータのみ）
+8. ログアウト後、`/trips` に直接アクセスすると再び `/login` へ
 
 ## 技術メモ
 

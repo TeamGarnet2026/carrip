@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
+import { translateSupabaseError } from '@/utils/supabase/error-messages'
 
 type AuthMode = 'login' | 'signup'
 
@@ -35,14 +36,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
     setLoading(false)
 
     if (error) {
-      setMessage(error.message)
-      return
-    }
-
-    if (!isLogin) {
-      setMessage(
-        '登録しました。確認メールが有効な場合はメール内のリンクを開いてからログインしてください。'
-      )
+      setMessage(translateSupabaseError(error))
       return
     }
 

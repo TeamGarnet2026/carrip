@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
 import { createClient } from '@/utils/supabase/server'
+import { translateSupabaseError } from '@/utils/supabase/error-messages'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,7 +19,7 @@ export default async function TripsPage() {
       <>
         <SiteHeader email={user?.email} showLogout />
         <main className="mx-auto max-w-3xl px-6 py-8">
-          <div>データの取得に失敗しました: {error.message}</div>
+          <div>データの取得に失敗しました: {translateSupabaseError(error)}</div>
         </main>
       </>
     )
