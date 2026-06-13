@@ -3,16 +3,31 @@ import {
   resolveStopsFromPlan,
 } from '@/lib/gemini/route-planner'
 import {
+  getCachedPlacesByPrefecture,
+  setCachedPlacesByPrefecture,
+} from '@/lib/cache/poi-cache'
+import {
   isGeminiConfigured,
   isGoogleCloudConfigured,
 } from '@/lib/google/config'
-import { geocodeAddress, resolveAdmissionFeesForStops, searchTouristSpotsForPrefectures } from '@/lib/google/places'
+import {
+  geocodeAddress,
+  resolveAdmissionFeesForStops,
+  searchTouristSpots,
+} from '@/lib/google/places'
+import type { PoiPlace } from '@/lib/google/types'
 import { isNavitimeConfigured } from '@/lib/navitime/config'
-import { fetchNavitimeCarRoute } from '@/lib/navitime/route-car'
+import { insertRestAreasIntoStops } from '@/lib/poi/rest-area'
+import {
+  fetchNavitimeCarRouteWithFallback,
+  resolveParkingFeesWithFallback,
+} from '@/lib/external/fallback'
+import { resolveFuelPriceForVehicle } from '@/lib/prices/fuel'
 import {
   buildCostBreakdown,
   sumCostBreakdown,
 } from '@/lib/routes/cost-estimate'
+import { collectDegradedReasons, type DegradedReason } from '@/lib/routes/degraded'
 import { buildFallbackRoutePlans } from '@/lib/routes/plan-fallback'
 import type {
   RouteGenerateRequest,
@@ -23,9 +38,62 @@ export function isRouteGenerationConfigured(): boolean {
   return isGoogleCloudConfigured() && isNavitimeConfigured()
 }
 
+async function searchTouristSpotsWithCache(
+  prefecture: string,
+  preferences: string[] = []
+): Promise<{ places: PoiPlace[]; fromCache: boolean }> {
+  const cached = await getCachedPlacesByPrefecture(prefecture, preferences)
+  if (cached?.length) {
+    return { places: cached, fromCache: true }
+  }
+
+  try {
+    const places = await searchTouristSpots(prefecture, preferences)
+    if (places.length > 0) {
+      await setCachedPlacesByPrefecture(prefecture, preferences, places)
+    }
+    return { places, fromCache: false }
+  } catch (error) {
+    if (cached?.length) {
+      console.warn('Places API failed, using cached POI data:', error)
+      return { places: cached, fromCache: true }
+    }
+    throw error
+  }
+}
+
+async function searchTouristSpotsForPrefecturesWithCache(
+  prefectures: string[],
+  preferences: string[] = []
+): Promise<{ places: PoiPlace[]; usedCacheFallback: boolean }> {
+  const results = await Promise.all(
+    prefectures.map((prefecture) =>
+      searchTouristSpotsWithCache(prefecture, preferences)
+    )
+  )
+
+  const seen = new Set<string>()
+  const merged: PoiPlace[] = []
+  let usedCacheFallback = false
+
+  for (const result of results) {
+    if (result.fromCache) usedCacheFallback = true
+    for (const place of result.places) {
+      if (seen.has(place.id)) continue
+      seen.add(place.id)
+      merged.push(place)
+    }
+  }
+
+  return {
+    places: merged.slice(0, 20),
+    usedCacheFallback,
+  }
+}
+
 export async function generateRoutes(
   request: RouteGenerateRequest
-): Promise<RouteSearchResult & { degraded?: boolean }> {
+): Promise<RouteSearchResult> {
   if (!isGoogleCloudConfigured()) {
     throw new Error('GOOGLE_CLOUD_API_KEY を .env.local に設定してください')
   }
@@ -36,10 +104,11 @@ export async function generateRoutes(
     )
   }
 
-  const places = await searchTouristSpotsForPrefectures(
-    request.prefecture,
-    request.preferences ?? []
-  )
+  const { places, usedCacheFallback } =
+    await searchTouristSpotsForPrefecturesWithCache(
+      request.prefecture,
+      request.preferences ?? []
+    )
 
   if (places.length === 0) {
     throw new Error(
@@ -55,6 +124,11 @@ export async function generateRoutes(
   let plans
   let geminiUsed = false
 
+  const fuelPrice = await resolveFuelPriceForVehicle(
+    request.prefecture[0] ?? '東京都',
+    request.vehicle
+  )
+
   if (isGeminiConfigured()) {
     try {
       plans = await planRoutesWithGemini(request, places)
@@ -67,29 +141,76 @@ export async function generateRoutes(
     plans = buildFallbackRoutePlans(request, places)
   }
 
-  let degraded = !geminiUsed
+  const routeDegradedReasons: DegradedReason[] = []
+  const maxDriveMin = request.options?.max_drive_min
 
   const routes = await Promise.all(
     plans.routes.slice(0, 3).map(async (plan) => {
-      const stops = resolveStopsFromPlan(plan, places)
+      let stops = resolveStopsFromPlan(plan, places)
       const admissionFeesPerPerson = await resolveAdmissionFeesForStops(stops)
-      const navitime = await fetchNavitimeCarRoute({
+
+      let navitime = await fetchNavitimeCarRouteWithFallback({
         request,
         routeId: plan.id,
         origin: originLatLng,
         stops: stops.map((stop) => ({
+          id: stop.id,
           name: stop.name,
           lat: stop.lat,
           lng: stop.lng,
+          category: stop.category,
         })),
       })
+
+      if (navitime.degraded && navitime.degraded_reason) {
+        routeDegradedReasons.push(navitime.degraded_reason)
+      }
+
+      if (maxDriveMin) {
+        const withRestAreas = await insertRestAreasIntoStops(
+          stops,
+          navitime.sections,
+          maxDriveMin
+        )
+
+        if (withRestAreas.length > stops.length) {
+          stops = withRestAreas
+          navitime = await fetchNavitimeCarRouteWithFallback({
+            request,
+            routeId: plan.id,
+            origin: originLatLng,
+            stops: stops.map((stop) => ({
+              id: stop.id,
+              name: stop.name,
+              lat: stop.lat,
+              lng: stop.lng,
+              category: stop.category,
+            })),
+          })
+          if (navitime.degraded && navitime.degraded_reason) {
+            routeDegradedReasons.push(navitime.degraded_reason)
+          }
+        }
+      }
+
+      const parkingYen = await resolveParkingFeesWithFallback(
+        stops.map((stop) => ({
+          id: stop.id,
+          name: stop.name,
+          lat: stop.lat,
+          lng: stop.lng,
+          category: stop.category,
+        })),
+        navitime.degraded
+      )
 
       const costBreakdown = buildCostBreakdown(
         request,
         navitime.distanceKm,
-        stops.length,
         navitime.tollYen,
-        admissionFeesPerPerson
+        admissionFeesPerPerson,
+        parkingYen,
+        fuelPrice.price_yen
       )
       const totalCost = sumCostBreakdown(costBreakdown)
 
@@ -118,10 +239,19 @@ export async function generateRoutes(
     })
   )
 
+  const degraded_reasons = collectDegradedReasons(
+    fuelPrice.degraded ? 'government_fuel' : null,
+    !geminiUsed ? 'gemini' : null,
+    usedCacheFallback ? 'places_cache' : null,
+    routeDegradedReasons
+  )
+
   return {
     generated_at: new Date().toISOString(),
     routes,
     gemini_used: geminiUsed,
-    ...(degraded ? { degraded: true } : {}),
+    ...(degraded_reasons.length > 0
+      ? { degraded: true, degraded_reasons }
+      : {}),
   }
 }

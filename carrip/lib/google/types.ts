@@ -19,6 +19,7 @@ export type PoiPlace = {
     }
   }
   priceLevel?: string
+  category?: string
 }
 
 export type RouteMetrics = {

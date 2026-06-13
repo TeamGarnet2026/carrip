@@ -46,6 +46,7 @@ export type RouteGenerateRequest = {
   vehicle: {
     type: string
     fuel_km_l?: number
+    fuel_type?: 'diesel' | 'regular' | 'premium'
   }
   budget_per_person?: number
   preferences?: string[]
@@ -57,10 +58,13 @@ export type RouteGenerateRequest = {
   }
 }
 
+import type { DegradedReason } from '@/lib/routes/degraded'
+
 export type RouteSearchResult = {
   routes: RouteCandidate[]
   generated_at: string
   degraded?: boolean
+  degraded_reasons?: DegradedReason[]
   gemini_used?: boolean
 }
 

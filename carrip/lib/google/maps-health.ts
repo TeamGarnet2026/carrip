@@ -4,10 +4,12 @@ export type GoogleMapsHealthCheck = {
   ok: boolean
   places_api: 'ok' | 'error' | 'skipped'
   maps_javascript_loader: 'ok' | 'error' | 'skipped'
+  /** 参考情報。Carrip の地図表示には未使用のため ok 判定には含めない */
   static_maps_api: 'ok' | 'not_enabled' | 'error' | 'skipped'
   likely_issue: 'none' | 'api_key_api_restriction' | 'api_key_referrer' | 'unknown'
   message: string
   fix_steps: string[]
+  warnings?: string[]
 }
 
 async function checkPlacesApi(apiKey: string): Promise<'ok' | 'error'> {
@@ -83,29 +85,13 @@ export async function checkGoogleMapsHealth(): Promise<GoogleMapsHealthCheck> {
     checkStaticMapsApi(apiKey),
   ])
 
+  const requiredOk = placesApi === 'ok' && mapsLoader === 'ok'
   const fixSteps: string[] = []
+  const warnings: string[] = []
 
   if (placesApi !== 'ok') {
     fixSteps.push(
-      'Places API を有効化し、API キーの制限リストに Places API を追加してください'
-    )
-  }
-
-  if (mapsLoader === 'ok' && placesApi === 'ok') {
-    fixSteps.push(
-      'Cloud Console で Maps JavaScript API にリクエストがあるのにエラー 100% の場合、API ライブラリは有効で **API キーの制限** が原因です（ApiTargetBlockedMapError）'
-    )
-    fixSteps.push(
-      '認証情報 → 使用中の API キー →「API の制限」→「キーを制限」→ リストに **Maps JavaScript API** があるか確認（Places API だけでは不可）'
-    )
-    fixSteps.push(
-      '「アプリケーションの制限」は **HTTP リファラー** を選択し、http://localhost:3000/* と http://127.0.0.1:3000/* を追加（IP 制限はブラウザから使えません）'
-    )
-    fixSteps.push(
-      '切り分け: 一時的に両方の制限を「なし」にすると地図が表示されるか確認 → 表示されれば制限の設定ミス'
-    )
-    fixSteps.push(
-      '設定変更後 1〜2 分待ってから npm run dev を再起動し、ブラウザをハードリロード'
+      'Places API を有効化し、API キーの制限リストに Places API (New) を追加してください'
     )
   }
 
@@ -113,29 +99,46 @@ export async function checkGoogleMapsHealth(): Promise<GoogleMapsHealthCheck> {
     fixSteps.push(
       '[Maps JavaScript API](https://console.cloud.google.com/apis/library/maps-backend.googleapis.com) を有効化してください'
     )
+    fixSteps.push(
+      'API キーの「API の制限」に Maps JavaScript API が含まれているか確認してください'
+    )
+    fixSteps.push(
+      '「アプリケーションの制限」は HTTP リファラー にし、http://localhost:3000/* を追加（IP 制限はブラウザから使えません）'
+    )
   }
 
-  const likelyIssue =
-    placesApi === 'ok' && mapsLoader === 'ok'
-      ? 'api_key_api_restriction'
-      : mapsLoader === 'error'
-        ? 'unknown'
-        : 'unknown'
+  if (staticMapsApi === 'not_enabled') {
+    warnings.push(
+      'Static Maps API は未有効ですが、Carrip では未使用のため問題ありません'
+    )
+  } else if (staticMapsApi === 'error') {
+    warnings.push('Static Maps API の疎通に失敗しました（Carrip では未使用）')
+  }
 
-  const runtimeBlocked =
-    placesApi === 'ok' && mapsLoader === 'ok' && staticMapsApi !== 'ok'
+  const likelyIssue: GoogleMapsHealthCheck['likely_issue'] = requiredOk
+    ? 'none'
+    : mapsLoader === 'error' && placesApi === 'ok'
+      ? 'api_key_api_restriction'
+      : 'unknown'
+
+  let message: string
+  if (requiredOk) {
+    message =
+      warnings.length > 0
+        ? 'Places API / Maps JavaScript API は利用可能です（参考: Static Maps は未使用）'
+        : 'Places API / Maps JavaScript API は利用可能です'
+  } else {
+    message = 'Google Maps Platform の必須 API（Places / Maps JavaScript）を確認してください'
+  }
 
   return {
-    ok: placesApi === 'ok' && mapsLoader === 'ok' && staticMapsApi === 'ok',
+    ok: requiredOk,
     places_api: placesApi,
     maps_javascript_loader: mapsLoader,
     static_maps_api: staticMapsApi,
     likely_issue: likelyIssue,
-    message: runtimeBlocked
-      ? 'Maps JavaScript API は有効でスクリプトは取得できますが、ブラウザ実行時に ApiTargetBlockedMapError になる状態です。API キーの「API の制限」に Maps JavaScript API を追加してください'
-      : placesApi === 'ok' && mapsLoader === 'ok'
-        ? 'Places / Maps JS ローダーは利用可能です'
-        : 'Google Maps Platform の設定を確認してください',
+    message,
     fix_steps: fixSteps,
+    ...(warnings.length > 0 ? { warnings } : {}),
   }
 }

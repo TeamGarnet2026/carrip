@@ -13,13 +13,14 @@ const baseRequest: RouteGenerateRequest = {
 
 describe('buildCostBreakdown admission', () => {
   it('calculates admission as sum of per-person fees multiplied by people', () => {
-    const breakdown = buildCostBreakdown(baseRequest, 100, 3, 2000, [800, 0, 500])
+    const breakdown = buildCostBreakdown(baseRequest, 100, 2000, [800, 0, 500], 1500)
 
     expect(breakdown.admission).toBe(5200)
+    expect(breakdown.parking).toBe(1500)
   })
 
   it('treats missing admission data as 0 yen', () => {
-    const breakdown = buildCostBreakdown(baseRequest, 100, 2, 2000, [0, 0])
+    const breakdown = buildCostBreakdown(baseRequest, 100, 2000, [0, 0], 0)
 
     expect(breakdown.admission).toBe(0)
   })

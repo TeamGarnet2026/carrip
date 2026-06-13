@@ -1,5 +1,6 @@
 import type { RouteGenerateRequest } from '@/lib/routes/types'
 import { calculateTotalAdmissionCost } from '@/lib/google/admission-fee'
+import { getFuelPriceYen } from '@/lib/routes/fuel'
 
 export type CostBreakdown = {
   fuel: number
@@ -17,9 +18,6 @@ const DEFAULT_FUEL_KM_L: Record<string, number> = {
   custom: 15,
 }
 
-const GAS_PRICE_YEN = 170
-const PARKING_YEN_PER_STOP = 500
-
 function getFuelEfficiency(request: RouteGenerateRequest): number {
   if (request.vehicle.fuel_km_l) return request.vehicle.fuel_km_l
   return DEFAULT_FUEL_KM_L[request.vehicle.type] ?? 15
@@ -28,13 +26,14 @@ function getFuelEfficiency(request: RouteGenerateRequest): number {
 export function buildCostBreakdown(
   request: RouteGenerateRequest,
   distanceKm: number,
-  stopCount: number,
   tollYen: number,
-  admissionFeesPerPerson: number[] = []
+  admissionFeesPerPerson: number[] = [],
+  parkingYen = 0,
+  fuelPriceYen?: number
 ): CostBreakdown {
   const fuelKmL = getFuelEfficiency(request)
-  const fuel = Math.round((distanceKm / fuelKmL) * GAS_PRICE_YEN)
-  const parking = stopCount * PARKING_YEN_PER_STOP
+  const unitPrice = fuelPriceYen ?? getFuelPriceYen(request.vehicle)
+  const fuel = Math.round((distanceKm / fuelKmL) * unitPrice)
   const admission = calculateTotalAdmissionCost(
     admissionFeesPerPerson,
     request.people
@@ -43,7 +42,7 @@ export function buildCostBreakdown(
   return {
     fuel,
     toll: tollYen,
-    parking,
+    parking: parkingYen,
     admission,
   }
 }

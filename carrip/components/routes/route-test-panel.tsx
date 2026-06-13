@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { useEffect, useState } from 'react'
+import { DegradedBanner } from '@/components/routes/degraded-banner'
 import { RouteDetailPanel } from '@/components/routes/route-detail-panel'
 import type { RouteSearchResponse } from '@/lib/routes/types'
 
@@ -128,10 +129,13 @@ export function RouteTestPanel() {
         </p>
       )}
 
-      {result?.degraded && (
-        <p className="mt-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
-          Gemini が利用できないため、評価順ベースのルート案を表示しています
-        </p>
+      {result && (result.degraded || result.degraded_reasons?.length) && (
+        <div className="mt-3">
+          <DegradedBanner
+            degraded={result.degraded}
+            degradedReasons={result.degraded_reasons}
+          />
+        </div>
       )}
 
       {result && selectedRouteId && (
