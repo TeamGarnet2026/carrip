@@ -13,6 +13,8 @@ import {
 } from '@/lib/routes/generate'
 import { routeGenerateSchema } from '@/lib/routes/schema'
 
+export const runtime = 'edge'
+
 export async function POST(request: Request) {
   if (!isRouteGenerationConfigured()) {
     return NextResponse.json(
