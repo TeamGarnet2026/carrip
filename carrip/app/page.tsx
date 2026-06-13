@@ -1,5 +1,3 @@
-export const runtime = 'edge';
-
 import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
 import { createClient } from '@/utils/supabase/server'

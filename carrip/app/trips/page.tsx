@@ -3,7 +3,6 @@ import { SiteHeader } from '@/components/site-header'
 import { createClient } from '@/utils/supabase/server'
 import { translateSupabaseError } from '@/utils/supabase/error-messages'
 
-export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
 export default async function TripsPage() {

@@ -2,8 +2,6 @@ import { NextResponse } from 'next/server'
 import { requireAuthUser } from '@/lib/api/auth'
 import { getTripDetailForUser } from '@/lib/trips/service'
 
-export const runtime = 'edge'
-
 type RouteParams = {
   params: Promise<{ id: string }>
 }

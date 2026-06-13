@@ -1,8 +1,6 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { requireAuthUser } from '@/lib/api/auth'
-
-export const runtime = 'edge'
 import { isGoogleCloudConfigured } from '@/lib/google/config'
 import {
   searchRestAreas,

@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import {
   ROUTE_CACHE_KEY_PREFIX,
   ROUTE_CACHE_TTL_SECONDS,
@@ -40,12 +41,10 @@ export function getCacheBackend(): CacheBackend | null {
 }
 
 export function buildRouteCacheKey(request: RouteGenerateRequest): string {
-  const str = stableStringify(request)
-  let h = 5381
-  for (let i = 0; i < str.length; i++) {
-    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
-  }
-  return `${ROUTE_CACHE_KEY_PREFIX}${(h >>> 0).toString(16).padStart(8, '0')}`
+  const hash = createHash('sha256')
+    .update(stableStringify(request))
+    .digest('hex')
+  return `${ROUTE_CACHE_KEY_PREFIX}${hash}`
 }
 
 export function getRouteCacheTtlSeconds(): number {
