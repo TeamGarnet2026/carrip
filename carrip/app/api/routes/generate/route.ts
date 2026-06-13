@@ -1,124 +1,79 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { generateRouteRequestSchema } from '@/types/schemas';
-import { ZodError } from 'zod';
+import { NextResponse } from 'next/server'
+import { ZodError } from 'zod'
+import {
+  buildRouteCacheKey,
+  getCacheBackend,
+  getCachedRouteSearch,
+  getRouteCacheTtlSeconds,
+  setCachedRouteSearch,
+} from '@/lib/cache/route-cache'
+import {
+  generateRoutes,
+  isRouteGenerationConfigured,
+} from '@/lib/routes/generate'
+import { routeGenerateSchema } from '@/lib/routes/schema'
 
-interface ValidationError {
-  code: string;
-  message: string;
-  details: Array<{
-    field: string;
-    message: string;
-  }>;
-}
-
-/**
- * バリデーションエラーをDR-INPエラーコードにマッピング
- */
-function mapValidationErrorToCode(field: string, index: number): string {
-  const fieldToCodeMap: Record<string, string> = {
-    departureLocation: 'DR-INP-001',
-    prefectures: 'DR-INP-002', // デフォルト
-    departureDate: 'DR-INP-004',
-    tripDays: 'DR-INP-006',
-    numberOfPeople: 'DR-INP-005',
-    'carType.fuelEfficiency': 'DR-INP-007',
-  };
-
-  // prefectures の場合は最大件数チェック
-  if (field === 'prefectures') {
-    return 'DR-INP-003';
+export async function POST(request: Request) {
+  if (!isRouteGenerationConfigured()) {
+    return NextResponse.json(
+      {
+        error:
+          'GOOGLE_CLOUD_API_KEY と RAPIDAPI_KEY / RAPIDAPI_HOST を .env.local に設定してください。',
+      },
+      { status: 503 }
+    )
   }
 
-  return fieldToCodeMap[field] || 'DR-INP-002';
-}
+  const cacheBackend = getCacheBackend()
+  if (!cacheBackend) {
+    return NextResponse.json(
+      {
+        error:
+          'Redis が未設定です。UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN を .env.local に設定してください。',
+      },
+      { status: 503 }
+    )
+  }
 
-/**
- * Zodのエラーをアプリケーション形式に変換
- */
-function formatZodError(zodError: ZodError): ValidationError {
-  const issues = zodError.issues;
-
-  // 最初のエラーのメッセージをメイン メッセージとして使用
-  const firstIssue = issues[0];
-  const code = mapValidationErrorToCode(
-    firstIssue.path.join('.'),
-    0
-  );
-
-  const details = issues.map((issue) => ({
-    field: issue.path.join('.'),
-    message: issue.message,
-  }));
-
-  return {
-    code,
-    message: firstIssue.message,
-    details,
-  };
-}
-
-export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json()
+    const params = routeGenerateSchema.parse(body)
+    const cacheKey = buildRouteCacheKey(params)
+    const ttlSeconds = getRouteCacheTtlSeconds()
 
-    // リクエストボディの検証
-    const validatedData = generateRouteRequestSchema.parse(body);
+    const cached = await getCachedRouteSearch(cacheKey)
+    if (cached) {
+      return NextResponse.json({
+        ...cached,
+        cached: true,
+        cache_backend: cacheBackend,
+        cache_key: cacheKey,
+        cache_ttl_seconds: ttlSeconds,
+      })
+    }
 
-    // TODO: 実際のルート生成ロジックはここに実装される
-    // このエンドポイントは、バリデーションが通った場合、
-    // 外部APIを呼び出してルート候補を生成します。
-    // 現時点では、バリデーションのみを実装しています。
+    const result = await generateRoutes(params)
+    await setCachedRouteSearch(cacheKey, result, ttlSeconds)
 
-    // 暫定的にバリデーション成功を返す
-    return NextResponse.json(
-      {
-        success: true,
-        message: 'バリデーション成功',
-        data: validatedData,
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      ...result,
+      cached: false,
+      cache_backend: cacheBackend,
+      cache_key: cacheKey,
+      cache_ttl_seconds: ttlSeconds,
+    })
   } catch (error) {
-    // Zodバリデーションエラーの処理
     if (error instanceof ZodError) {
-      const validationError = formatZodError(error);
       return NextResponse.json(
-        {
-          error: validationError,
-        },
+        { error: '入力内容に誤りがあります', details: error.flatten() },
         { status: 400 }
-      );
+      )
     }
 
-    // JSON パースエラーの処理
-    if (error instanceof SyntaxError) {
-      return NextResponse.json(
-        {
-          error: {
-            code: 'DR-SYS-002',
-            message: '予期せぬエラーが発生しました。しばらく後にお試しください。',
-            details: [
-              {
-                field: 'body',
-                message: 'リクエストボディが不正なJSON形式です。',
-              },
-            ],
-          },
-        },
-        { status: 400 }
-      );
-    }
+    const message =
+      error instanceof Error ? error.message : 'ルート検索に失敗しました'
 
-    // その他の予期しないエラー
-    return NextResponse.json(
-      {
-        error: {
-          code: 'DR-SYS-002',
-          message: '予期せぬエラーが発生しました。しばらく後にお試しください。',
-          details: [],
-        },
-      },
-      { status: 500 }
-    );
+    console.error('POST /api/routes/generate failed:', error)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
 }

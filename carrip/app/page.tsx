@@ -1,34 +1,43 @@
-export const runtime = 'edge';
-
+import Link from 'next/link'
+import { SiteHeader } from '@/components/site-header'
 import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
 export default async function Home() {
-  // 変更点: await を追加
   const supabase = await createClient()
-  
-  // tripsテーブルからデータを取得
-  const { data: trips, error } = await supabase.from('trips').select('*')
-
-  if (error) {
-    return <div>データの取得に失敗しました: {error.message}</div>
-  }
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   return (
-    <main className="p-8">
-      <h1 className="text-2xl font-bold mb-4">旅行プラン一覧</h1>
-      {trips?.length === 0 ? (
-        <p>データがありません。Supabaseで直接データを入れてみてください。</p>
-      ) : (
-        <ul>
-          {trips?.map((trip) => (
-            <li key={trip.id} className="border p-4 mb-2 rounded">
-              {trip.origin} 出発 ({trip.days}日間)
-            </li>
-          ))}
-        </ul>
-      )}
-    </main>
+    <>
+      <SiteHeader email={user?.email} showLogout={!!user} />
+      <main className="mx-auto flex max-w-3xl flex-col gap-8 px-6 py-16">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Carrip</h1>
+          <p className="mt-3 text-neutral-600 dark:text-neutral-400">
+            ドライブ旅行向けに、観光ルートと費用（燃料・高速・駐車・入場）をまとめて提案します。
+          </p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/plan/demo/routes"
+            className="rounded bg-neutral-900 px-5 py-3 text-center text-sm font-medium text-white dark:bg-neutral-100 dark:text-neutral-900"
+          >
+            ルート候補を見る（ログイン不要）
+          </Link>
+          <Link
+            href={user ? '/trips' : '/login?redirectTo=%2Ftrips'}
+            className="rounded border border-neutral-300 px-5 py-3 text-center text-sm font-medium dark:border-neutral-700"
+          >
+            マイプラン
+          </Link>
+        </div>
+        <p className="text-sm text-neutral-500 dark:text-neutral-500">
+          プランの保存・共有はログイン後に利用できます。ルート候補の閲覧はアカウント不要です。
+        </p>
+      </main>
+    </>
   )
 }

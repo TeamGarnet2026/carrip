@@ -1,0 +1,15 @@
+{
+  "updated_at": "2026-05-01",
+  "source": "enecho_monthly",
+  "national_average": {
+    "regular": 168,
+    "diesel": 138,
+    "premium": 188
+  },
+  "prefectures": {
+    "京都府": { "regular": 169, "diesel": 139, "premium": 189 },
+    "愛知県": { "regular": 167, "diesel": 137, "premium": 187 },
+    "東京都": { "regular": 170, "diesel": 140, "premium": 190 },
+    "大阪府": { "regular": 168, "diesel": 138, "premium": 188 }
+  }
+}
