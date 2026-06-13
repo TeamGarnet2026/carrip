@@ -1,5 +1,7 @@
 // app/test-auth/page.tsx
 import { createClient } from '@/utils/supabase/server'
+
+export const runtime = 'edge'
 import { redirect } from 'next/navigation'
 
 export default async function TestAuthPage() {

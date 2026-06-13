@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { SiteHeader } from '@/components/site-header'
 import { createClient } from '@/utils/supabase/server'
 
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
 type PlanConfirmedPageProps = {

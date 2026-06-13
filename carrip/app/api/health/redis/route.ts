@@ -5,6 +5,8 @@ import {
 } from '@/lib/cache/route-cache'
 import { isRedisConfigured, pingRedis } from '@/lib/redis/client'
 
+export const runtime = 'edge'
+
 export async function GET() {
   const cacheBackend = getCacheBackend()
 

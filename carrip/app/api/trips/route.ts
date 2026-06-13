@@ -7,6 +7,8 @@ import {
   listTripsForUser,
 } from '@/lib/trips/service'
 
+export const runtime = 'edge'
+
 export async function GET() {
   const auth = await requireAuthUser()
   if (auth.response) return auth.response

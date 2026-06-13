@@ -6,6 +6,8 @@ import {
 } from '@/lib/prices/fuel'
 import { fuelPriceQuerySchema } from '@/lib/prices/schema'
 
+export const runtime = 'edge'
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)

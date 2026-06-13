@@ -1,4 +1,3 @@
-import { createHash } from 'crypto'
 import { getNavitimeConfig } from '@/lib/navitime/config'
 import { applyEtcTollDiscount } from '@/lib/toll/etc-discount'
 import { extractTollYen } from '@/lib/toll/extract-toll'
@@ -36,10 +35,12 @@ function buildStartTime(query: TollPriceQuery): string {
 }
 
 export function buildTollCacheKey(query: TollPriceQuery): string {
-  const hash = createHash('sha256')
-    .update(JSON.stringify(query))
-    .digest('hex')
-  return `prices:toll:${hash}`
+  const str = JSON.stringify(query)
+  let h = 5381
+  for (let i = 0; i < str.length; i++) {
+    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
+  }
+  return `prices:toll:${(h >>> 0).toString(16).padStart(8, '0')}`
 }
 
 function resolveTollYen(

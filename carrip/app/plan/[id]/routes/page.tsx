@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { RouteTestPanel } from '@/components/routes/route-test-panel'
 import { SiteHeader } from '@/components/site-header'
 
+export const runtime = 'edge'
+
 type RouteCandidatesPageProps = {
   params: Promise<{ id: string }>
 }

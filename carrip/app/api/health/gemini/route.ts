@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { checkGeminiHealth } from '@/lib/gemini/health'
 
+export const runtime = 'edge'
+
 export async function GET() {
   try {
     const health = await checkGeminiHealth()

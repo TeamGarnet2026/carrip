@@ -3,6 +3,8 @@ import { poiRequestSchema } from '@/types/schemas';
 import { getPOIsByRegionAndPriority } from '@/utils/poi/poiService';
 import { ZodError } from 'zod';
 
+export const runtime = 'edge'
+
 interface ValidationError {
   code: string;
   message: string;

@@ -4,6 +4,8 @@ import {
   getCachedTollPrice,
   setCachedTollPrice,
 } from '@/lib/prices/toll-cache'
+
+export const runtime = 'edge'
 import { isNavitimeConfigured } from '@/lib/navitime/config'
 import { tollPriceQuerySchema } from '@/lib/prices/schema'
 import { buildTollCacheKey, queryTollPrice } from '@/lib/prices/toll'
