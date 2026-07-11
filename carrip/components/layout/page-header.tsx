@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 
@@ -6,7 +5,7 @@ type PageHeaderProps = {
   title: string
   showBack?: boolean
   backHref?: string
-  rightAction?: ReactNode
+  rightAction?: React.ReactNode
 }
 
 export function PageHeader({
@@ -21,12 +20,12 @@ export function PageHeader({
         {showBack && (
           <Link
             href={backHref}
-            className="text-sm text-neutral-600 underline dark:text-neutral-400"
+            className="text-sm font-extrabold text-brand-dark underline"
           >
             戻る
           </Link>
         )}
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-2xl font-black tracking-tight text-ink">{title}</h1>
       </div>
       {rightAction}
     </div>
@@ -44,7 +43,9 @@ type StepperProps = {
 export function Stepper({ value, min, max, label, onChange }: StepperProps) {
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium">{label}</label>
+      <label className="mb-1.5 block text-xs font-extrabold text-muted">
+        {label}
+      </label>
       <div className="flex items-center gap-3">
         <Button
           variant="secondary"
@@ -54,7 +55,7 @@ export function Stepper({ value, min, max, label, onChange }: StepperProps) {
         >
           −
         </Button>
-        <span className="min-w-16 text-center text-lg font-semibold">
+        <span className="min-w-16 text-center text-lg font-black text-ink">
           {value}
         </span>
         <Button

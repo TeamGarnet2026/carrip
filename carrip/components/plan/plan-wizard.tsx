@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { BudgetInput } from '@/components/form/budget-input'
 import { DateRangePicker } from '@/components/form/date-range-picker'
-import { PrefectureTagInput } from '@/components/form/prefecture-tag-input'
+import { DestinationPicker } from '@/components/form/destination-picker'
 import { PreferenceSelector } from '@/components/form/preference-selector'
 import { VehicleSelector } from '@/components/form/vehicle-selector'
-import { PageHeader, Stepper } from '@/components/layout/page-header'
+import { Stepper } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { PLAN_STEPS, VEHICLE_PRESETS } from '@/lib/plan/constants'
@@ -111,19 +111,29 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
   }
 
   return (
-    <div>
-      <PageHeader title="新しい旅程を作成" showBack backHref="/" />
+    <div className="carrip-wizard-card">
+      <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-4">
+        <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#e5ecef]">
+          <span
+            className="block h-full rounded-full bg-brand transition-all"
+            style={{ width: `${(step / 4) * 100}%` }}
+          />
+        </div>
+        <span className="text-[13px] font-extrabold whitespace-nowrap text-muted">
+          ステップ {step} / 4
+        </span>
+      </div>
 
-      <ol className="mb-8 flex flex-wrap gap-2">
+      <ol className="flex flex-wrap gap-2 border-b border-line px-5 py-3">
         {PLAN_STEPS.map((item) => (
           <li
             key={item.step}
-            className={`rounded-full px-3 py-1 text-xs font-medium ${
+            className={`rounded-full px-3 py-1 text-xs font-extrabold ${
               item.step === step
-                ? 'bg-teal-700 text-white dark:bg-teal-500 dark:text-neutral-950'
+                ? 'bg-brand text-white'
                 : item.step < step
-                  ? 'bg-teal-100 text-teal-800 dark:bg-teal-950 dark:text-teal-200'
-                  : 'bg-neutral-100 text-neutral-500 dark:bg-neutral-900'
+                  ? 'bg-[#e8f4f2] text-brand-dark'
+                  : 'bg-soft text-muted'
             }`}
           >
             {item.step}. {item.label}
@@ -131,7 +141,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
         ))}
       </ol>
 
-      <div className="space-y-6 rounded-xl border border-neutral-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-950">
+      <div className="space-y-6 p-6">
         {step === 1 && (
           <>
             <Input
@@ -156,7 +166,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
 
         {step === 2 && (
           <>
-            <PrefectureTagInput
+            <DestinationPicker
               value={form.prefecture}
               onChange={(prefecture) => updateForm({ prefecture })}
             />
@@ -290,7 +300,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
             </section>
             <section>
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-semibold">エリア・人数・車種</h2>
+                <h2 className="font-semibold">目的地・人数・車種</h2>
                 <button
                   type="button"
                   className="text-teal-700 underline dark:text-teal-400"
@@ -343,7 +353,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
         )}
       </div>
 
-      <div className="mt-6 flex justify-between gap-3">
+      <div className="flex justify-between gap-3 border-t border-line px-5 py-4">
         {step > 1 ? (
           <Button variant="secondary" onClick={handleBack}>
             戻る

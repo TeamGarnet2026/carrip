@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { SiteHeader } from '@/components/site-header'
+import { AppShell } from '@/components/layout/app-shell'
 import { Badge } from '@/components/ui/badge'
 import { Spinner } from '@/components/ui/spinner'
 import { CostBreakdownPanel } from '@/components/route/cost-breakdown-panel'
@@ -63,9 +63,8 @@ export function ShareViewClient({ shortCode }: ShareViewPageProps) {
   }, [shortCode])
 
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto max-w-3xl px-6 py-8">
+    <AppShell title="共有プラン" subtitle="閲覧専用の旅程情報です">
+      <div className="max-w-3xl">
         {loading && (
           <div className="flex justify-center py-16">
             <Spinner label="共有プランを読み込み中" />
@@ -148,16 +147,16 @@ export function ShareViewClient({ shortCode }: ShareViewPageProps) {
             </div>
           </div>
         )}
-      </main>
-    </>
+      </div>
+    </AppShell>
   )
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-neutral-50 p-3 dark:bg-neutral-900">
-      <p className="text-xs text-neutral-500">{label}</p>
-      <p className="font-medium">{value}</p>
+    <div className="rounded-lg bg-soft p-3">
+      <p className="text-xs text-muted">{label}</p>
+      <p className="font-extrabold text-ink">{value}</p>
     </div>
   )
 }

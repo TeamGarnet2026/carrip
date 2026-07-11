@@ -12,19 +12,17 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-teal-700 text-white hover:bg-teal-800 dark:bg-teal-500 dark:hover:bg-teal-400 dark:text-neutral-950',
+    'bg-brand text-white hover:bg-brand-dark border border-transparent shadow-sm',
   secondary:
-    'border border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800',
-  ghost:
-    'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-900',
-  danger:
-    'bg-red-600 text-white hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-400',
+    'border border-line bg-soft text-ink hover:bg-[#e8edef]',
+  ghost: 'text-ink hover:bg-soft border border-transparent',
+  danger: 'bg-red-600 text-white hover:bg-red-700 border border-transparent',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'px-3 py-1.5 text-sm',
-  md: 'px-4 py-2 text-sm',
-  lg: 'px-5 py-3 text-base',
+  sm: 'min-h-[36px] px-3 py-1.5 text-sm',
+  md: 'min-h-[42px] px-4 py-2 text-sm',
+  lg: 'min-h-[52px] px-6 py-3 text-base',
 }
 
 export function Button({
@@ -41,7 +39,7 @@ export function Button({
     <button
       type="button"
       disabled={disabled || isLoading}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-[7px] font-extrabold transition disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {isLoading ? (
