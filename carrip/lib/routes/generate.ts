@@ -40,6 +40,12 @@ import {
 } from '@/lib/routes/cost-estimate'
 import { aggregateParkingSource } from '@/lib/routes/cost-sources'
 import { collectDegradedReasons, type DegradedReason } from '@/lib/routes/degraded'
+import {
+  buildDestinationStopsAsPlaces,
+  buildDirectRouteSummary,
+  isDestinationRoutingStop,
+  isDirectRoute,
+} from '@/lib/routes/cost-focused-plan'
 import { buildFallbackRoutePlans } from '@/lib/routes/plan-fallback'
 import type {
   RouteGenerateRequest,
@@ -179,6 +185,28 @@ function mapStopsForResponse(
   })
 }
 
+function toNavitimeStops(stops: PoiPlace[]) {
+  return stops.map((stop) => ({
+    id: stop.id,
+    name: stop.name,
+    lat: stop.lat,
+    lng: stop.lng,
+    category: stop.category,
+  }))
+}
+
+function visibleStopsForRoute(
+  pathStops: PoiPlace[],
+  directRoute: boolean
+): PoiPlace[] {
+  if (!directRoute) return pathStops
+  // 直行プランは運転交代の休憩所のみ表示（観光地・目的地ウェイポイントは除外）
+  return pathStops.filter(
+    (stop) =>
+      !isDestinationRoutingStop(stop.id) && !isTouristStop(stop)
+  )
+}
+
 export async function generateRoutes(
   request: RouteGenerateRequest
 ): Promise<RouteSearchResult> {
@@ -251,36 +279,30 @@ export async function generateRoutes(
 
   const routes = await Promise.all(
     plans.routes.slice(0, 3).map(async (plan) => {
-      let stops = resolveStopsFromPlan(
-        plan,
-        routePlaces,
-        destinations,
-        originLatLng
-      )
-      stops = filterTouristStopsNearDestination(stops, destinations, originLatLng)
+      const directRoute = isDirectRoute(plan.id)
 
-      const touristStops = stops.filter(isTouristStop)
-      const admissionFeesPerPerson = await resolveAdmissionFeesForStops(
-        touristStops
-      )
-      const admissionByPlaceId = new Map(
-        touristStops.map((stop, index) => [
-          stop.id,
-          admissionFeesPerPerson[index] ?? 0,
-        ])
-      )
+      let pathStops: PoiPlace[] = directRoute
+        ? buildDestinationStopsAsPlaces(request.prefecture, destinations)
+        : resolveStopsFromPlan(
+            plan,
+            routePlaces,
+            destinations,
+            originLatLng
+          )
+
+      if (!directRoute) {
+        pathStops = filterTouristStopsNearDestination(
+          pathStops,
+          destinations,
+          originLatLng
+        )
+      }
 
       let navitime = await fetchNavitimeCarRouteWithFallback({
         request,
         routeId: plan.id,
         origin: originLatLng,
-        stops: stops.map((stop) => ({
-          id: stop.id,
-          name: stop.name,
-          lat: stop.lat,
-          lng: stop.lng,
-          category: stop.category,
-        })),
+        stops: toNavitimeStops(pathStops),
       })
 
       if (navitime.degraded && navitime.degraded_reason) {
@@ -290,28 +312,22 @@ export async function generateRoutes(
       if (maxDriveMin > 0) {
         for (let attempt = 0; attempt < 3; attempt += 1) {
           const withDriverChangeStops = await insertDriverChangeStops(
-            stops,
+            pathStops,
             navitime.sections,
             maxDriveMin,
-            useHighway,
+            directRoute ? true : useHighway,
             originLatLng,
             roundTrip
           )
 
-          if (withDriverChangeStops.length === stops.length) break
+          if (withDriverChangeStops.length === pathStops.length) break
 
-          stops = withDriverChangeStops
+          pathStops = withDriverChangeStops
           navitime = await fetchNavitimeCarRouteWithFallback({
             request,
             routeId: plan.id,
             origin: originLatLng,
-            stops: stops.map((stop) => ({
-              id: stop.id,
-              name: stop.name,
-              lat: stop.lat,
-              lng: stop.lng,
-              category: stop.category,
-            })),
+            stops: toNavitimeStops(pathStops),
           })
           if (navitime.degraded && navitime.degraded_reason) {
             routeDegradedReasons.push(navitime.degraded_reason)
@@ -319,32 +335,53 @@ export async function generateRoutes(
         }
       }
 
-      const parkingFees = await resolveParkingFeeDetailsWithFallback(
-        stops.map((stop) => ({
-          id: stop.id,
-          name: stop.name,
-          lat: stop.lat,
-          lng: stop.lng,
-          category: stop.category,
-        })),
-        navitime.degraded
+      const responsePathStops = visibleStopsForRoute(pathStops, directRoute)
+      const touristStops = responsePathStops.filter(isTouristStop)
+      const admissionFeesPerPerson = directRoute
+        ? []
+        : await resolveAdmissionFeesForStops(touristStops)
+      const admissionByPlaceId = new Map(
+        touristStops.map((stop, index) => [
+          stop.id,
+          admissionFeesPerPerson[index] ?? 0,
+        ])
       )
+
+      const parkingFees = directRoute
+        ? []
+        : await resolveParkingFeeDetailsWithFallback(
+            responsePathStops.map((stop) => ({
+              id: stop.id,
+              name: stop.name,
+              lat: stop.lat,
+              lng: stop.lng,
+              category: stop.category,
+            })),
+            navitime.degraded
+          )
       const parkingYen = parkingFees.reduce(
         (total, fee) => total + fee.total_yen,
         0
       )
 
-      const costBreakdown = buildCostBreakdown(
-        request,
-        navitime.distanceKm,
-        navitime.tollYen,
-        admissionFeesPerPerson,
-        parkingYen,
-        fuelPrice.price_yen
-      )
+      const costBreakdown = directRoute
+        ? {
+            fuel: 0,
+            toll: navitime.tollYen,
+            parking: 0,
+            admission: 0,
+          }
+        : buildCostBreakdown(
+            request,
+            navitime.distanceKm,
+            navitime.tollYen,
+            admissionFeesPerPerson,
+            parkingYen,
+            fuelPrice.price_yen
+          )
       const totalCost = sumCostBreakdown(costBreakdown)
       const responseStops = mapStopsForResponse(
-        stops,
+        responsePathStops,
         parkingFees,
         admissionByPlaceId
       )
@@ -352,18 +389,27 @@ export async function generateRoutes(
       return {
         id: plan.id,
         title: plan.title,
-        summary: plan.summary,
+        summary: directRoute
+          ? buildDirectRouteSummary(plan.id, request)
+          : plan.summary,
         transport_mode: 'car' as const,
         stops: responseStops,
         polyline: navitime.polyline,
         sections: navitime.sections,
         cost_breakdown: costBreakdown,
-        cost_sources: {
-          fuel: fuelPrice.source,
-          toll: navitime.degraded ? ('estimate' as const) : ('navitime' as const),
-          parking: aggregateParkingSource(responseStops),
-          admission: 'places' as const,
-        },
+        cost_sources: directRoute
+          ? {
+              fuel: undefined,
+              toll: navitime.degraded ? ('estimate' as const) : ('navitime' as const),
+              parking: undefined,
+              admission: undefined,
+            }
+          : {
+              fuel: fuelPrice.source,
+              toll: navitime.degraded ? ('estimate' as const) : ('navitime' as const),
+              parking: aggregateParkingSource(responseStops),
+              admission: 'places' as const,
+            },
         total_distance_km: navitime.distanceKm,
         total_duration_min: navitime.durationMin,
         total_cost: totalCost,

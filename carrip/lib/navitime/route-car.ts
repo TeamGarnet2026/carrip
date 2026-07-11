@@ -2,6 +2,7 @@ import {
   conditionForRouteVariant,
   getNavitimeConfig,
 } from '@/lib/navitime/config'
+import { isDirectRoute } from '@/lib/routes/cost-focused-plan'
 import type { RouteGenerateRequest } from '@/lib/routes/types'
 import { applyEtcTollDiscount } from '@/lib/toll/etc-discount'
 import { extractTollYen } from '@/lib/toll/extract-toll'
@@ -144,7 +145,8 @@ export async function fetchNavitimeCarRoute(
     name: stop.name,
   }))
 
-  const useHighway = request.options?.use_highway !== false
+  const useHighway =
+    isDirectRoute(routeId) || request.options?.use_highway !== false
   let condition = conditionForRouteVariant(routeId)
   if (!useHighway) {
     condition = 'free_only'

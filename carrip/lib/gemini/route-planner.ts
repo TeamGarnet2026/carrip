@@ -5,11 +5,12 @@ import {
   selectPlacesNearDestination,
   type LatLng,
 } from '@/lib/maps/route-corridor'
+import { isDirectRoute } from '@/lib/routes/cost-focused-plan'
 import type { RouteGenerateRequest } from '@/lib/routes/types'
 
 const ROUTE_VARIANTS = [
-  { id: 'route-1', title: 'コスト重視ルート', focus: '移動距離と費用を抑え、効率よく回る' },
-  { id: 'route-2', title: 'バランスタイプ', focus: '移動・観光・休憩のバランスが良い' },
+  { id: 'route-1', title: 'コスト重視ルート', focus: '立ち寄りなしで目的地まで直行し、高速料金と所要時間を最小化する' },
+  { id: 'route-2', title: 'バランスタイプ', focus: '高速道路のみ・立ち寄りなしで目的地まで直行し、所要時間とのバランスを取る' },
   { id: 'route-3', title: '景観重視ルート', focus: '評価の高い人気スポットを優先する' },
 ] as const
 
@@ -46,9 +47,11 @@ ${variants}
 ${poiList}
 
 ## ルール
-- 各案は 2〜4 箇所の stop_place_ids を選ぶ
-- 訪問先都道府県の周辺エリアにある POI のみ選ぶ（出発地付近やルート途中は不可）
-- 出発地から目的地方向へ近づく順に並べる（目的地到着後に出発地方向へ戻らない）
+- route-1（コスト重視）: stop_place_ids は空配列 [] とする（観光地なし・目的地まで直行）
+- route-2（バランスタイプ）: stop_place_ids は空配列 [] とする（観光地なし・高速道路のみで直行）
+- route-3（景観重視）: 2〜4 箇所の stop_place_ids を選ぶ
+- route-3 は訪問先都道府県の周辺エリアにある POI のみ選ぶ（出発地付近やルート途中は不可）
+- route-3 は出発地から目的地方向へ近づく順に並べる（目的地到着後に出発地方向へ戻らない）
 - 同じ POI を複数案で使い回してよい
 - summary は日本語 80〜120 字で、その案の魅力を説明する
 - 必ず次の JSON 形式のみ返す（余計なキーは不要）
@@ -59,7 +62,7 @@ ${poiList}
       "id": "route-1",
       "title": "コスト重視ルート",
       "summary": "...",
-      "stop_place_ids": ["places/..."]
+      "stop_place_ids": []
     }
   ]
 }`
@@ -90,6 +93,10 @@ export function resolveStopsFromPlan(
   destinations: LatLng[] = [],
   origin?: LatLng
 ): PoiPlace[] {
+  if (isDirectRoute(plan.id)) {
+    return []
+  }
+
   const byId = new Map(places.map((p) => [p.id, p]))
   const stops: PoiPlace[] = []
 

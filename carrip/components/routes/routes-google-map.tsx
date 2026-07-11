@@ -15,6 +15,9 @@ import {
   isSameDepartureArrival,
   mapMarkerColor,
   mapMarkerLabel,
+  buildRoundTripStopLegs,
+  roundTripStopNumber,
+  roundTripStopTitlePrefix,
   ROUND_TRIP_OUTBOUND_COLOR,
   ROUND_TRIP_RETURN_COLOR,
   splitRoundTripPolyline,
@@ -264,6 +267,10 @@ export function RoutesGoogleMap({
     selectedRoute != null && isRoundTripRoute(selectedRoute)
   const sameDepartureArrival =
     selectedRoute != null && isSameDepartureArrival(selectedRoute.polyline)
+  const stopLegs =
+    selectedRoute && selectedRoundTrip
+      ? buildRoundTripStopLegs(selectedRoute.polyline, selectedRoute.stops)
+      : []
 
   return (
     <div className="overflow-hidden rounded border border-neutral-200 dark:border-neutral-800">
@@ -332,18 +339,26 @@ export function RoutesGoogleMap({
             key={stop.place_id}
             position={{ lat: stop.lat, lng: stop.lng }}
             icon={{
-              url: markerPinColor(mapMarkerColor('stop', selectedRoundTrip)),
+              url: markerPinColor(
+                mapMarkerColor(
+                  'stop',
+                  selectedRoundTrip,
+                  stopLegs[index]
+                )
+              ),
               labelOrigin: new google.maps.Point(15, 14),
             }}
             label={{
-              text: mapMarkerLabel('stop', index),
+              text: selectedRoundTrip
+                ? String(roundTripStopNumber(stopLegs, index))
+                : mapMarkerLabel('stop', index),
               color: '#ffffff',
               fontSize: '11px',
               fontWeight: '700',
             }}
             title={
               selectedRoundTrip
-                ? `行き ${index + 1}. ${stop.name}`
+                ? `${roundTripStopTitlePrefix(stopLegs, index)}${stop.name}`
                 : stop.name
             }
           />

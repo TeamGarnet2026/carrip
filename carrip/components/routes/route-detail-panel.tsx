@@ -4,7 +4,15 @@ import { useState } from 'react'
 import { OpenInGoogleMapsLink } from '@/components/maps/open-in-google-maps-link'
 import { RoundTripLegend } from '@/components/maps/round-trip-legend'
 import { CostBreakdownPanel } from '@/components/route/cost-breakdown-panel'
-import { isRoundTripRoute } from '@/lib/maps/round-trip-display'
+import {
+  buildRoundTripStopLegs,
+  computeRoundTripLegDurations,
+  formatDurationMinutes,
+  formatRouteDuration,
+  isRoundTripRoute,
+  roundTripStopNumber,
+  type RoundTripLeg,
+} from '@/lib/maps/round-trip-display'
 import { driverChangeBadgeLabel } from '@/lib/poi/stop-labels'
 import type { RouteCandidate, RouteStop } from '@/lib/routes/types'
 
@@ -18,14 +26,6 @@ type RouteDetailPanelProps = {
   addableStops?: RouteStop[]
   onStopsChange?: (stops: RouteStop[], needsRouteRecalc: boolean) => void
   showIndexLabel?: boolean
-}
-
-function formatDuration(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  if (hours === 0) return `${mins}分`
-  if (mins === 0) return `${hours}時間`
-  return `${hours}時間${mins}分`
 }
 
 function formatYen(amount: number): string {
@@ -47,6 +47,10 @@ export function RouteDetailPanel({
 
   const canEdit = editable && onStopsChange != null && !recalculating
   const roundTrip = isRoundTripRoute(route)
+  const stopLegs = roundTrip
+    ? buildRoundTripStopLegs(route.polyline, route.stops)
+    : []
+  const legDurations = roundTrip ? computeRoundTripLegDurations(route) : null
 
   function moveStop(stopIndex: number, direction: -1 | 1) {
     if (!canEdit) return
@@ -130,7 +134,14 @@ export function RouteDetailPanel({
           <p className="mb-2 font-medium">走行概要</p>
           <ul className="space-y-1 text-neutral-600 dark:text-neutral-400">
             <li>総距離: {route.total_distance_km} km</li>
-            <li>総時間: {formatDuration(route.total_duration_min)}</li>
+            {legDurations ? (
+              <>
+                <li>行き: {formatDurationMinutes(legDurations.outboundMin)}</li>
+                <li>帰り: {formatDurationMinutes(legDurations.returnMin)}</li>
+              </>
+            ) : (
+              <li>総時間: {formatRouteDuration(route)}</li>
+            )}
             <li>総費用: {formatYen(route.total_cost)}</li>
             <li>1人あたり: {formatYen(route.cost_per_person)}</li>
             {route.departure_time && (
@@ -203,16 +214,31 @@ export function RouteDetailPanel({
                 stop.category,
                 stop.is_rest_stop
               )
+              const stopLeg = stopLegs[stopIndex]
               return (
                 <li
                   key={stop.place_id}
                   className="flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-2 last:border-0 dark:border-neutral-900"
                 >
-                  <OrderBadge kind="stop" index={stopIndex} roundTrip={roundTrip} />
+                  <OrderBadge
+                    kind="stop"
+                    index={
+                      roundTrip
+                        ? roundTripStopNumber(stopLegs, stopIndex) - 1
+                        : stopIndex
+                    }
+                    leg={roundTrip ? stopLeg : undefined}
+                  />
                   <span>{stop.name}</span>
-                  {roundTrip && !stop.is_rest_stop && (
-                    <span className="rounded bg-teal-50 px-1.5 py-0.5 text-xs text-teal-700 dark:bg-teal-950 dark:text-teal-300">
-                      行き
+                  {roundTrip && stopLeg && (
+                    <span
+                      className={`rounded px-1.5 py-0.5 text-xs ${
+                        stopLeg === 'return'
+                          ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
+                          : 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300'
+                      }`}
+                    >
+                      {stopLeg === 'return' ? '帰り' : '行き'}
                     </span>
                   )}
                   {label && (
@@ -328,7 +354,7 @@ export function RouteDetailPanel({
               <li key={`${section.type}-${sectionIndex}`}>
                 [{section.type}] {section.name}
                 {section.duration_min != null &&
-                  ` · ${formatDuration(section.duration_min)}`}
+                  ` · ${formatDurationMinutes(section.duration_min)}`}
                 {section.distance_km != null && ` · ${section.distance_km} km`}
               </li>
             ))}
@@ -342,11 +368,11 @@ export function RouteDetailPanel({
 function OrderBadge({
   kind,
   index,
-  roundTrip = false,
+  leg,
 }: {
   kind: 'departure' | 'arrival' | 'stop'
   index?: number
-  roundTrip?: boolean
+  leg?: RoundTripLeg
 }) {
   if (kind === 'departure') {
     return (
@@ -366,7 +392,11 @@ function OrderBadge({
   return (
     <span
       className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
-        roundTrip ? 'bg-teal-600' : 'bg-blue-600'
+        leg === 'return'
+          ? 'bg-amber-500'
+          : leg === 'outbound'
+            ? 'bg-teal-600'
+            : 'bg-blue-600'
       }`}
     >
       {(index ?? 0) + 1}

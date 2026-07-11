@@ -1,5 +1,11 @@
 import type { GeminiRoutePlansResponse, PoiPlace } from '@/lib/google/types'
 import {
+  BALANCED_ROUTE_ID,
+  buildDirectRouteSummary,
+  COST_FOCUSED_ROUTE_ID,
+  isDirectRoute,
+} from '@/lib/routes/cost-focused-plan'
+import {
   orderStopsTowardDestinations,
   selectPlacesNearDestination,
   type LatLng,
@@ -31,13 +37,22 @@ export function buildFallbackRoutePlans(
   destinations: LatLng[]
 ): GeminiRoutePlansResponse {
   const variants = [
-    { id: 'route-1', title: 'コスト重視ルート', count: 2 },
-    { id: 'route-2', title: 'バランスタイプ', count: 3 },
+    { id: COST_FOCUSED_ROUTE_ID, title: 'コスト重視ルート', count: 0 },
+    { id: BALANCED_ROUTE_ID, title: 'バランスタイプ', count: 0 },
     { id: 'route-3', title: '景観重視ルート', count: 4 },
   ] as const
 
   return {
     routes: variants.map((variant) => {
+      if (isDirectRoute(variant.id)) {
+        return {
+          id: variant.id,
+          title: variant.title,
+          summary: buildDirectRouteSummary(variant.id, request),
+          stop_place_ids: [],
+        }
+      }
+
       const stops = orderStopsTowardDestinations(
         origin,
         destinations,

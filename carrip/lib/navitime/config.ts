@@ -23,7 +23,9 @@ export type NavitimeRouteCondition =
 export function conditionForRouteVariant(routeId: string): NavitimeRouteCondition {
   switch (routeId) {
     case 'route-1':
-      return 'free_time'
+      return 'toll_distance'
+    case 'route-2':
+      return 'toll_time'
     case 'route-3':
       return 'toll_time'
     default:

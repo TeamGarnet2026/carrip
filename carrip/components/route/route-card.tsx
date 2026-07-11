@@ -4,6 +4,12 @@ import type { RouteCandidate } from '@/lib/routes/types'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { CostBreakdownPanel } from '@/components/route/cost-breakdown-panel'
+import {
+  computeRoundTripLegDurations,
+  formatDurationMinutes,
+  formatRouteDuration,
+  isRoundTripRoute,
+} from '@/lib/maps/round-trip-display'
 
 type RouteCardProps = {
   route: RouteCandidate
@@ -13,14 +19,6 @@ type RouteCardProps = {
   onClick?: () => void
   showRecommendBadge?: boolean
   showIndexLabel?: boolean
-}
-
-function formatDuration(minutes: number): string {
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  if (hours === 0) return `${mins}分`
-  if (mins === 0) return `${hours}時間`
-  return `${hours}時間${mins}分`
 }
 
 function formatYen(amount: number): string {
@@ -39,6 +37,8 @@ export function RouteCard({
   const heading = showIndexLabel
     ? `案${index + 1}: ${route.title}`
     : route.title
+  const roundTrip = isRoundTripRoute(route)
+  const legDurations = roundTrip ? computeRoundTripLegDurations(route) : null
 
   return (
     <Card isClickable={!!onClick} isSelected={isSelected} onClick={onClick}>
@@ -60,9 +60,14 @@ export function RouteCard({
         </div>
         <div>
           <p className="text-xs text-neutral-500">所要時間</p>
-          <p className="font-medium">
-            {formatDuration(route.total_duration_min)}
-          </p>
+          {legDurations ? (
+            <div className="space-y-0.5 font-medium">
+              <p>行 {formatDurationMinutes(legDurations.outboundMin)}</p>
+              <p>帰 {formatDurationMinutes(legDurations.returnMin)}</p>
+            </div>
+          ) : (
+            <p className="font-medium">{formatRouteDuration(route)}</p>
+          )}
         </div>
         <div>
           <p className="text-xs text-neutral-500">総費用</p>

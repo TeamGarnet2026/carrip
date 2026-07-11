@@ -22,6 +22,9 @@ import {
   isSameDepartureArrival,
   mapMarkerColor,
   mapMarkerLabel,
+  buildRoundTripStopLegs,
+  roundTripStopNumber,
+  roundTripStopTitlePrefix,
   ROUND_TRIP_OUTBOUND_COLOR,
   ROUND_TRIP_RETURN_COLOR,
   splitRoundTripPolyline,
@@ -127,6 +130,10 @@ export function RoutesOsmMap({
     selectedRoute != null && isRoundTripRoute(selectedRoute)
   const sameDepartureArrival =
     selectedRoute != null && isSameDepartureArrival(selectedRoute.polyline)
+  const stopLegs =
+    selectedRoute && selectedRoundTrip
+      ? buildRoundTripStopLegs(selectedRoute.polyline, selectedRoute.stops)
+      : []
 
   return (
     <div className="overflow-hidden rounded border border-neutral-200 dark:border-neutral-800">
@@ -196,12 +203,16 @@ export function RoutesOsmMap({
             key={stop.place_id}
             position={[stop.lat, stop.lng]}
             icon={createLabeledIcon(
-              mapMarkerLabel('stop', index),
-              mapMarkerColor('stop', selectedRoundTrip)
+              selectedRoundTrip
+                ? String(roundTripStopNumber(stopLegs, index))
+                : mapMarkerLabel('stop', index),
+              mapMarkerColor('stop', selectedRoundTrip, stopLegs[index])
             )}
           >
             <Tooltip direction="top" offset={[0, -8]} opacity={1}>
-              {selectedRoundTrip ? `行き ${index + 1}. ` : ''}
+              {selectedRoundTrip
+                ? roundTripStopTitlePrefix(stopLegs, index)
+                : ''}
               {stop.name}
             </Tooltip>
           </Marker>

@@ -52,36 +52,46 @@ const SAMPLE_STOPS: RouteStop[] = [
 export function generateRouteSearchStub(
   request: RouteGenerateRequest
 ): RouteSearchResult {
-  const baseCost = 12000 * request.days * request.people
-
   return {
     generated_at: new Date().toISOString(),
     routes: ROUTE_TITLES.map((title, index) => {
       const factor = [0.85, 1.0, 1.15][index]
-      const stops = SAMPLE_STOPS.slice(0, index + 2 > 3 ? 3 : index + 2)
-      const totalCost = Math.round(baseCost * factor)
-      const fuel = Math.round(totalCost * 0.35)
-      const toll = Math.round(totalCost * 0.25)
-      const parking = stops.reduce(
-        (total, stop) => total + (stop.parking_yen ?? 0),
-        0
-      )
-      const admission =
-        stops.reduce(
-          (total, stop) => total + (stop.admission_yen_per_person ?? 0),
-          0
-        ) * request.people
+      const directRoute = index === 0 || index === 1
+      const stops = directRoute
+        ? []
+        : SAMPLE_STOPS.slice(0, index + 2 > 3 ? 3 : index + 2)
+      const toll = Math.round(12000 * request.days * factor * 0.25)
+      const fuel = directRoute
+        ? 0
+        : Math.round(12000 * request.days * factor * 0.35)
+      const parking = directRoute
+        ? 0
+        : stops.reduce((total, stop) => total + (stop.parking_yen ?? 0), 0)
+      const admission = directRoute
+        ? 0
+        : stops.reduce(
+            (total, stop) => total + (stop.admission_yen_per_person ?? 0),
+            0
+          ) * request.people
+      const totalCost = fuel + toll + parking + admission
       const originPoint = { lat: 35.0116, lng: 135.7681 }
+      const destinationPoint = { lat: 35.0116, lng: 135.9812 }
       const stopPoints = stops.map((stop) => ({ lat: stop.lat, lng: stop.lng }))
       const roundTrip = request.options?.round_trip === true
-      const polyline = roundTrip
-        ? [originPoint, ...stopPoints, originPoint]
-        : stopPoints
+      const polyline = directRoute
+        ? roundTrip
+          ? [originPoint, destinationPoint, originPoint]
+          : [originPoint, destinationPoint]
+        : roundTrip
+          ? [originPoint, ...stopPoints, originPoint]
+          : stopPoints
 
       return {
         id: `route-${index + 1}`,
         title,
-        summary: `${request.prefecture.join('、')} 方面の${title}（スタブ）`,
+        summary: directRoute
+          ? `${request.prefecture.join('、')} まで直行（スタブ）`
+          : `${request.prefecture.join('、')} 方面の${title}（スタブ）`,
         transport_mode: 'car' as const,
         stops,
         polyline,
@@ -95,17 +105,15 @@ export function generateRouteSearchStub(
         ],
         cost_breakdown: { fuel, toll, parking, admission },
         cost_sources: {
-          fuel: 'fixed_fallback' as const,
+          fuel: directRoute ? undefined : ('fixed_fallback' as const),
           toll: 'estimate' as const,
-          parking: 'category_default' as const,
-          admission: 'estimate' as const,
+          parking: directRoute ? undefined : ('category_default' as const),
+          admission: directRoute ? undefined : ('estimate' as const),
         },
         total_distance_km: Math.round(180 * request.days * factor),
         total_duration_min: Math.round(240 * request.days * factor),
-        total_cost: fuel + toll + parking + admission,
-        cost_per_person: Math.round(
-          (fuel + toll + parking + admission) / request.people
-        ),
+        total_cost: totalCost,
+        cost_per_person: Math.round(totalCost / request.people),
         round_trip: roundTrip,
       }
     }),
