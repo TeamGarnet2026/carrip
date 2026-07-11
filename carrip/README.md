@@ -117,13 +117,21 @@ curl -X POST http://localhost:3000/api/routes/generate \
 ## ローカル確認手順（ログイン）
 
 1. Supabase Dashboard で **Authentication → Email** を有効化し、**Confirm email** をオフにする（サインアップ直後にログイン）
-2. `npm run dev` を起動
-3. http://localhost:3000/plan/demo/routes を開く（ログイン不要）
-4. 「このプランを保存する」→ `/login?redirectTo=...` に遷移することを確認
-5. http://localhost:3000/signup でアカウント作成
-6. 登録後、保存画面または `redirectTo` 先に戻ることを確認
-7. http://localhost:3000/trips でマイプラン一覧（RLS により自分のデータのみ）
-8. ログアウト後、`/trips` に直接アクセスすると再び `/login` へ
+2. **SQL Editor** で RLS ポリシーを適用する
+   - 初回: `supabase/migrations/20260710140000_rls_policies.sql`
+   - 再帰エラーが出た場合: 続けて `supabase/migrations/20260710150000_fix_rls_recursion.sql` を実行
+3. `npm run dev` を起動
+4. http://localhost:3000/plan/new?step=1 から旅程を作成
+5. ルート候補で「このルートを選ぶ」→ プラン保存
+6. http://localhost:3000/trips でマイプラン一覧（RLS により自分のデータのみ）
+7. ログアウト後、`/trips` に直接アクセスすると再び `/login` へ
+
+### RLS エラーが出る場合
+
+`new row violates row-level security policy for table "routes"` または `infinite recursion detected in policy for relation "trips"` が出たら、Supabase Dashboard → **SQL Editor** で以下を実行してください。
+
+1. `supabase/migrations/20260710140000_rls_policies.sql`（未実行の場合）
+2. `supabase/migrations/20260710150000_fix_rls_recursion.sql`（再帰エラー修正）
 
 ## 技術メモ
 

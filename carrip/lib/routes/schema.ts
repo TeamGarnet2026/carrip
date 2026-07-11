@@ -23,8 +23,8 @@ export const routeGenerateSchema = z.object({
   origin: z.string().min(1),
   prefecture: z.array(z.string()).min(1).max(5),
   departure_date: z.string().min(1),
-  days: z.number().int().min(1).max(3),
-  people: z.number().int().min(1).max(10),
+  days: z.number().int().min(1).max(7),
+  people: z.number().int().min(1).max(15),
   vehicle: vehicleSchema,
   budget_per_person: z.number().int().positive().optional(),
   preferences: z.array(z.string()).optional(),
@@ -34,6 +34,31 @@ export const routeGenerateSchema = z.object({
       departure_time: z.string().optional(),
       max_drive_min: z.number().int().min(30).max(240).optional(),
       etc_card: z.boolean().optional(),
+      round_trip: z.boolean().optional(),
     })
     .optional(),
 })
+
+export const routeStopEditSchema = z.object({
+  place_id: z.string().min(1),
+  name: z.string().min(1),
+  address: z.string().min(1),
+  lat: z.number(),
+  lng: z.number(),
+  category: z.string().optional(),
+  is_rest_stop: z.boolean().optional(),
+  stay_minutes: z.number().int().min(0).max(720).optional(),
+  parking_yen: z.number().int().min(0).max(100000).optional(),
+  parking_source: z
+    .enum(['places', 'category_default', 'free', 'manual', 'estimate'])
+    .optional(),
+  admission_yen_per_person: z.number().int().min(0).max(100000).optional(),
+})
+
+export const routeRecalculateSchema = z.object({
+  request: routeGenerateSchema,
+  route_id: z.string().min(1),
+  stops: z.array(routeStopEditSchema).min(1).max(15),
+})
+
+export type RouteRecalculateInput = z.infer<typeof routeRecalculateSchema>

@@ -1,9 +1,22 @@
+export type ParkingSource =
+  | 'places'
+  | 'category_default'
+  | 'free'
+  | 'manual'
+  | 'estimate'
+
 export type RouteStop = {
   place_id: string
   name: string
   address: string
   lat: number
   lng: number
+  category?: string
+  is_rest_stop?: boolean
+  stay_minutes?: number
+  parking_yen?: number
+  parking_source?: ParkingSource
+  admission_yen_per_person?: number
 }
 
 export type CostBreakdown = {
@@ -11,6 +24,13 @@ export type CostBreakdown = {
   toll: number
   parking: number
   admission: number
+}
+
+export type CostSources = {
+  fuel?: 'government_api' | 'monthly_fallback' | 'fixed_fallback'
+  toll?: 'navitime' | 'estimate'
+  parking?: ParkingSource
+  admission?: 'places' | 'estimate'
 }
 
 export type RouteSection = {
@@ -29,12 +49,14 @@ export type RouteCandidate = {
   polyline: Array<{ lat: number; lng: number }>
   sections: RouteSection[]
   cost_breakdown: CostBreakdown
+  cost_sources?: CostSources
   total_distance_km: number
   total_duration_min: number
   total_cost: number
   cost_per_person: number
   departure_time?: string
   arrival_time?: string
+  round_trip?: boolean
 }
 
 export type RouteGenerateRequest = {
@@ -55,6 +77,7 @@ export type RouteGenerateRequest = {
     departure_time?: string
     max_drive_min?: number
     etc_card?: boolean
+    round_trip?: boolean
   }
 }
 
@@ -73,4 +96,5 @@ export type RouteSearchResponse = RouteSearchResult & {
   cache_backend?: 'redis' | 'memory'
   cache_key: string
   cache_ttl_seconds: number
+  mode?: 'stub' | 'live'
 }

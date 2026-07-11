@@ -2,8 +2,11 @@ import type { DegradedReason } from '@/lib/routes/degraded'
 import { computeRouteMetrics } from '@/lib/google/routes-api'
 import type { PoiPlace } from '@/lib/google/types'
 import {
+  DEFAULT_PARKING_YEN_PER_HOUR,
+  DEFAULT_STAY_MINUTES,
   estimateParkingFallback,
   resolveParkingFeesForStops,
+  type ParkingFeeResult,
 } from '@/lib/navitime/parking'
 import {
   fetchNavitimeCarRoute,
@@ -50,6 +53,7 @@ export async function fetchNavitimeCarRouteWithFallback(input: {
     const metrics = await computeRouteMetrics(input.request.origin, poiStops, {
       useHighway: input.request.options?.use_highway !== false,
       originLatLng: input.origin,
+      roundTrip: input.request.options?.round_trip === true,
     })
 
     return {
@@ -71,26 +75,48 @@ export async function fetchNavitimeCarRouteWithFallback(input: {
   }
 }
 
-export async function resolveParkingFeesWithFallback(
-  stops: Array<{
-    id: string
-    name: string
-    lat: number
-    lng: number
-    category?: string
-    stay_minutes?: number
-  }>,
+type ParkingFallbackStop = {
+  id: string
+  name: string
+  lat: number
+  lng: number
+  category?: string
+  stay_minutes?: number
+}
+
+function estimateParkingDetails(
+  stops: ParkingFallbackStop[]
+): ParkingFeeResult[] {
+  return stops.map((stop) => ({
+    place_id: stop.id,
+    name: stop.name,
+    hourly_yen: DEFAULT_PARKING_YEN_PER_HOUR,
+    stay_minutes: stop.stay_minutes ?? DEFAULT_STAY_MINUTES,
+    total_yen: estimateParkingFallback(1, stop.stay_minutes),
+    source: 'category_default',
+  }))
+}
+
+export async function resolveParkingFeeDetailsWithFallback(
+  stops: ParkingFallbackStop[],
   degraded: boolean
-): Promise<number> {
+): Promise<ParkingFeeResult[]> {
   if (degraded) {
-    return estimateParkingFallback(stops.length)
+    return estimateParkingDetails(stops)
   }
 
   try {
-    const fees = await resolveParkingFeesForStops(stops)
-    return fees.reduce((total, fee) => total + fee.total_yen, 0)
+    return await resolveParkingFeesForStops(stops)
   } catch (error) {
     console.warn('Parking fee lookup failed, using fallback estimate:', error)
-    return estimateParkingFallback(stops.length)
+    return estimateParkingDetails(stops)
   }
+}
+
+export async function resolveParkingFeesWithFallback(
+  stops: ParkingFallbackStop[],
+  degraded: boolean
+): Promise<number> {
+  const fees = await resolveParkingFeeDetailsWithFallback(stops, degraded)
+  return fees.reduce((total, fee) => total + fee.total_yen, 0)
 }

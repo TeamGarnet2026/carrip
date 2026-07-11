@@ -16,22 +16,35 @@ import {
   searchTouristSpots,
 } from '@/lib/google/places'
 import type { PoiPlace } from '@/lib/google/types'
+import {
+  DESTINATION_RADIUS_KM,
+  filterPlacesNearDestinations,
+  orderStopsTowardDestinations,
+  selectPlacesNearDestination,
+  type LatLng,
+} from '@/lib/maps/route-corridor'
 import { isNavitimeConfigured } from '@/lib/navitime/config'
-import { insertRestAreasIntoStops } from '@/lib/poi/rest-area'
+import {
+  insertDriverChangeStops,
+  isTouristStop,
+} from '@/lib/poi/rest-area'
 import {
   fetchNavitimeCarRouteWithFallback,
-  resolveParkingFeesWithFallback,
+  resolveParkingFeeDetailsWithFallback,
 } from '@/lib/external/fallback'
+import type { ParkingFeeResult } from '@/lib/navitime/parking'
 import { resolveFuelPriceForVehicle } from '@/lib/prices/fuel'
 import {
   buildCostBreakdown,
   sumCostBreakdown,
 } from '@/lib/routes/cost-estimate'
+import { aggregateParkingSource } from '@/lib/routes/cost-sources'
 import { collectDegradedReasons, type DegradedReason } from '@/lib/routes/degraded'
 import { buildFallbackRoutePlans } from '@/lib/routes/plan-fallback'
 import type {
   RouteGenerateRequest,
   RouteSearchResult,
+  RouteStop,
 } from '@/lib/routes/types'
 
 export function isRouteGenerationConfigured(): boolean {
@@ -91,6 +104,81 @@ async function searchTouristSpotsForPrefecturesWithCache(
   }
 }
 
+async function buildDestinationPoints(
+  prefectures: string[]
+): Promise<LatLng[]> {
+  const destinations: LatLng[] = []
+
+  for (const prefecture of prefectures) {
+    const point = await geocodeAddress(prefecture)
+    if (point) destinations.push(point)
+  }
+
+  return destinations
+}
+
+function filterTouristStopsNearDestination(
+  stops: PoiPlace[],
+  destinations: LatLng[],
+  origin: LatLng
+): PoiPlace[] {
+  const touristStops = stops.filter(isTouristStop)
+  const breakStops = stops.filter((stop) => !isTouristStop(stop))
+
+  let filtered = filterPlacesNearDestinations(
+    touristStops,
+    destinations,
+    DESTINATION_RADIUS_KM
+  )
+
+  if (filtered.length === 0) {
+    filtered = filterPlacesNearDestinations(
+      touristStops,
+      destinations,
+      DESTINATION_RADIUS_KM * 1.5
+    )
+  }
+
+  if (filtered.length === 0) {
+    filtered = touristStops
+  }
+
+  const orderedTourist = orderStopsTowardDestinations(
+    origin,
+    destinations,
+    filtered
+  )
+
+  return [...breakStops, ...orderedTourist]
+}
+
+function mapStopsForResponse(
+  stops: PoiPlace[],
+  parkingFees: ParkingFeeResult[],
+  admissionByPlaceId: Map<string, number>
+): RouteStop[] {
+  const parkingByPlaceId = new Map(
+    parkingFees.map((fee) => [fee.place_id, fee])
+  )
+
+  return stops.map((stop) => {
+    const parking = parkingByPlaceId.get(stop.id)
+    return {
+      place_id: stop.id,
+      name: stop.name,
+      address: stop.address,
+      lat: stop.lat,
+      lng: stop.lng,
+      category: stop.category,
+      is_rest_stop: !isTouristStop(stop),
+      stay_minutes: parking?.stay_minutes ?? 60,
+      parking_yen: parking?.total_yen ?? 0,
+      parking_source: parking?.source ?? 'estimate',
+      admission_yen_per_person: admissionByPlaceId.get(stop.id) ?? 0,
+    }
+  })
+}
+
 export async function generateRoutes(
   request: RouteGenerateRequest
 ): Promise<RouteSearchResult> {
@@ -121,6 +209,21 @@ export async function generateRoutes(
     throw new Error(`出発地「${request.origin}」の位置情報を取得できませんでした`)
   }
 
+  const destinations = await buildDestinationPoints(request.prefecture)
+  if (destinations.length === 0) {
+    throw new Error(
+      `${request.prefecture.join('、')} の位置情報を取得できませんでした`
+    )
+  }
+
+  const routePlaces = selectPlacesNearDestination(places, destinations)
+
+  if (routePlaces.length === 0) {
+    throw new Error(
+      `${request.prefecture.join('、')} の周辺で観光スポットが見つかりませんでした`
+    )
+  }
+
   let plans
   let geminiUsed = false
 
@@ -131,23 +234,41 @@ export async function generateRoutes(
 
   if (isGeminiConfigured()) {
     try {
-      plans = await planRoutesWithGemini(request, places)
+      plans = await planRoutesWithGemini(request, routePlaces)
       geminiUsed = true
     } catch (error) {
       console.warn('Gemini route planning failed, using fallback:', error)
-      plans = buildFallbackRoutePlans(request, places)
+      plans = buildFallbackRoutePlans(request, routePlaces, originLatLng, destinations)
     }
   } else {
-    plans = buildFallbackRoutePlans(request, places)
+    plans = buildFallbackRoutePlans(request, routePlaces, originLatLng, destinations)
   }
 
   const routeDegradedReasons: DegradedReason[] = []
-  const maxDriveMin = request.options?.max_drive_min
+  const maxDriveMin = request.options?.max_drive_min ?? 120
+  const useHighway = request.options?.use_highway !== false
+  const roundTrip = request.options?.round_trip === true
 
   const routes = await Promise.all(
     plans.routes.slice(0, 3).map(async (plan) => {
-      let stops = resolveStopsFromPlan(plan, places)
-      const admissionFeesPerPerson = await resolveAdmissionFeesForStops(stops)
+      let stops = resolveStopsFromPlan(
+        plan,
+        routePlaces,
+        destinations,
+        originLatLng
+      )
+      stops = filterTouristStopsNearDestination(stops, destinations, originLatLng)
+
+      const touristStops = stops.filter(isTouristStop)
+      const admissionFeesPerPerson = await resolveAdmissionFeesForStops(
+        touristStops
+      )
+      const admissionByPlaceId = new Map(
+        touristStops.map((stop, index) => [
+          stop.id,
+          admissionFeesPerPerson[index] ?? 0,
+        ])
+      )
 
       let navitime = await fetchNavitimeCarRouteWithFallback({
         request,
@@ -166,15 +287,20 @@ export async function generateRoutes(
         routeDegradedReasons.push(navitime.degraded_reason)
       }
 
-      if (maxDriveMin) {
-        const withRestAreas = await insertRestAreasIntoStops(
-          stops,
-          navitime.sections,
-          maxDriveMin
-        )
+      if (maxDriveMin > 0) {
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+          const withDriverChangeStops = await insertDriverChangeStops(
+            stops,
+            navitime.sections,
+            maxDriveMin,
+            useHighway,
+            originLatLng,
+            roundTrip
+          )
 
-        if (withRestAreas.length > stops.length) {
-          stops = withRestAreas
+          if (withDriverChangeStops.length === stops.length) break
+
+          stops = withDriverChangeStops
           navitime = await fetchNavitimeCarRouteWithFallback({
             request,
             routeId: plan.id,
@@ -193,7 +319,7 @@ export async function generateRoutes(
         }
       }
 
-      const parkingYen = await resolveParkingFeesWithFallback(
+      const parkingFees = await resolveParkingFeeDetailsWithFallback(
         stops.map((stop) => ({
           id: stop.id,
           name: stop.name,
@@ -202,6 +328,10 @@ export async function generateRoutes(
           category: stop.category,
         })),
         navitime.degraded
+      )
+      const parkingYen = parkingFees.reduce(
+        (total, fee) => total + fee.total_yen,
+        0
       )
 
       const costBreakdown = buildCostBreakdown(
@@ -213,28 +343,34 @@ export async function generateRoutes(
         fuelPrice.price_yen
       )
       const totalCost = sumCostBreakdown(costBreakdown)
+      const responseStops = mapStopsForResponse(
+        stops,
+        parkingFees,
+        admissionByPlaceId
+      )
 
       return {
         id: plan.id,
         title: plan.title,
         summary: plan.summary,
         transport_mode: 'car' as const,
-        stops: stops.map((stop) => ({
-          place_id: stop.id,
-          name: stop.name,
-          address: stop.address,
-          lat: stop.lat,
-          lng: stop.lng,
-        })),
+        stops: responseStops,
         polyline: navitime.polyline,
         sections: navitime.sections,
         cost_breakdown: costBreakdown,
+        cost_sources: {
+          fuel: fuelPrice.source,
+          toll: navitime.degraded ? ('estimate' as const) : ('navitime' as const),
+          parking: aggregateParkingSource(responseStops),
+          admission: 'places' as const,
+        },
         total_distance_km: navitime.distanceKm,
         total_duration_min: navitime.durationMin,
         total_cost: totalCost,
         cost_per_person: Math.round(totalCost / request.people),
         departure_time: navitime.departureTime,
         arrival_time: navitime.arrivalTime,
+        round_trip: roundTrip,
       }
     })
   )

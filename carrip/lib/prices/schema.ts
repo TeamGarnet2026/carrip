@@ -18,6 +18,8 @@ export const tollPriceQuerySchema = z.object({
   departure_time: z.string().optional(),
 })
 
+export type TollPriceQuery = z.infer<typeof tollPriceQuerySchema>
+
 export type FuelPriceQuery = z.infer<typeof fuelPriceQuerySchema>
 
 export const fuelPriceQuerySchema = z.object({

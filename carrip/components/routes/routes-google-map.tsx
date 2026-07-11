@@ -7,8 +7,18 @@ import {
   PolylineF,
   useJsApiLoader,
 } from '@react-google-maps/api'
+import { RoundTripLegend } from '@/components/maps/round-trip-legend'
 import { getRouteColor } from '@/lib/maps/route-colors'
 import { getGoogleMapsApiKey } from '@/lib/google/maps-key'
+import {
+  isRoundTripRoute,
+  isSameDepartureArrival,
+  mapMarkerColor,
+  mapMarkerLabel,
+  ROUND_TRIP_OUTBOUND_COLOR,
+  ROUND_TRIP_RETURN_COLOR,
+  splitRoundTripPolyline,
+} from '@/lib/maps/round-trip-display'
 import type { RouteCandidate } from '@/lib/routes/types'
 
 type MapsHealthHint = {
@@ -44,6 +54,76 @@ function buildBounds(routes: RouteCandidate[]): google.maps.LatLngBounds | undef
   }
 
   return hasPoint ? bounds : undefined
+}
+
+function markerPinColor(hex: string): string {
+  const map: Record<string, string> = {
+    '#0d9488': 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
+    '#f59e0b': 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png',
+    '#2563eb': 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+  }
+  return map[hex] ?? map['#2563eb']
+}
+
+function RoutePolylines({
+  route,
+  index,
+  isSelected,
+  onSelectRoute,
+}: {
+  route: RouteCandidate
+  index: number
+  isSelected: boolean
+  onSelectRoute: (routeId: string) => void
+}) {
+  const color = getRouteColor(route.id, index)
+  const roundTrip = isSelected && isRoundTripRoute(route)
+  const legs = roundTrip ? splitRoundTripPolyline(route.polyline, route.stops) : null
+
+  if (route.polyline.length < 2) return null
+
+  if (legs) {
+    return (
+      <>
+        <PolylineF
+          path={legs.outbound}
+          options={{
+            strokeColor: ROUND_TRIP_OUTBOUND_COLOR,
+            strokeOpacity: 1,
+            strokeWeight: 7,
+            zIndex: 3,
+            clickable: true,
+          }}
+          onClick={() => onSelectRoute(route.id)}
+        />
+        <PolylineF
+          path={legs.returnLeg}
+          options={{
+            strokeColor: ROUND_TRIP_RETURN_COLOR,
+            strokeOpacity: 0.9,
+            strokeWeight: 7,
+            zIndex: 3,
+            clickable: true,
+          }}
+          onClick={() => onSelectRoute(route.id)}
+        />
+      </>
+    )
+  }
+
+  return (
+    <PolylineF
+      path={route.polyline}
+      options={{
+        strokeColor: color,
+        strokeOpacity: isSelected ? 1 : 0.45,
+        strokeWeight: isSelected ? 7 : 4,
+        zIndex: isSelected ? 3 : 1,
+        clickable: true,
+      }}
+      onClick={() => onSelectRoute(route.id)}
+    />
+  )
 }
 
 export function RoutesGoogleMap({
@@ -180,6 +260,10 @@ export function RoutesGoogleMap({
   }
 
   const selectedRoute = routes.find((route) => route.id === selectedRouteId)
+  const selectedRoundTrip =
+    selectedRoute != null && isRoundTripRoute(selectedRoute)
+  const sameDepartureArrival =
+    selectedRoute != null && isSameDepartureArrival(selectedRoute.polyline)
 
   return (
     <div className="overflow-hidden rounded border border-neutral-200 dark:border-neutral-800">
@@ -194,39 +278,74 @@ export function RoutesGoogleMap({
           fullscreenControl: true,
         }}
       >
-        {routes.map((route, index) => {
-          const color = getRouteColor(route.id, index)
-          const isSelected = route.id === selectedRouteId
+        {routes.map((route, index) => (
+          <RoutePolylines
+            key={route.id}
+            route={route}
+            index={index}
+            isSelected={route.id === selectedRouteId}
+            onSelectRoute={onSelectRoute}
+          />
+        ))}
 
-          if (route.polyline.length < 2) return null
-
-          return (
-            <PolylineF
-              key={route.id}
-              path={route.polyline}
-              options={{
-                strokeColor: color,
-                strokeOpacity: isSelected ? 1 : 0.45,
-                strokeWeight: isSelected ? 7 : 4,
-                zIndex: isSelected ? 3 : 1,
-                clickable: true,
+        {selectedRoute && selectedRoundTrip && selectedRoute.polyline.length > 0 && (
+          <>
+            <MarkerF
+              position={selectedRoute.polyline[0]}
+              icon={{
+                url: markerPinColor(mapMarkerColor('departure', true)),
+                labelOrigin: new google.maps.Point(15, 14),
               }}
-              onClick={() => onSelectRoute(route.id)}
+              label={{
+                text: sameDepartureArrival ? '発' : mapMarkerLabel('departure'),
+                color: '#ffffff',
+                fontSize: '11px',
+                fontWeight: '700',
+              }}
+              title={
+                sameDepartureArrival
+                  ? `${originLabel ?? '出発地'}（出発・帰着）`
+                  : `${originLabel ?? '出発地'}（出発）`
+              }
             />
-          )
-        })}
+            {!sameDepartureArrival && (
+              <MarkerF
+                position={selectedRoute.polyline.at(-1)!}
+                icon={{
+                  url: markerPinColor(mapMarkerColor('arrival', true)),
+                  labelOrigin: new google.maps.Point(15, 14),
+                }}
+                label={{
+                  text: mapMarkerLabel('arrival'),
+                  color: '#ffffff',
+                  fontSize: '11px',
+                  fontWeight: '700',
+                }}
+                title={`${originLabel ?? '出発地'}（帰着）`}
+              />
+            )}
+          </>
+        )}
 
         {selectedRoute?.stops.map((stop, index) => (
           <MarkerF
             key={stop.place_id}
             position={{ lat: stop.lat, lng: stop.lng }}
+            icon={{
+              url: markerPinColor(mapMarkerColor('stop', selectedRoundTrip)),
+              labelOrigin: new google.maps.Point(15, 14),
+            }}
             label={{
-              text: String(index + 1),
+              text: mapMarkerLabel('stop', index),
               color: '#ffffff',
               fontSize: '11px',
               fontWeight: '700',
             }}
-            title={stop.name}
+            title={
+              selectedRoundTrip
+                ? `行き ${index + 1}. ${stop.name}`
+                : stop.name
+            }
           />
         ))}
       </GoogleMap>
@@ -257,9 +376,16 @@ export function RoutesGoogleMap({
         })}
       </div>
 
+      {selectedRoundTrip && (
+        <div className="border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
+          <RoundTripLegend />
+        </div>
+      )}
+
       <p className="border-t border-neutral-200 px-3 py-2 text-xs text-neutral-500 dark:border-neutral-800">
         Google マップ · 自動車ルート（NAVITIME）
         {originLabel ? ` · 出発: ${originLabel}` : ''}
+        {selectedRoundTrip ? ' · 往復' : ''}
       </p>
     </div>
   )
