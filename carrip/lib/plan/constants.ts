@@ -70,7 +70,7 @@ export const PREFERENCE_OPTIONS = [
 
 export const PLAN_STEPS = [
   { step: 1, label: '出発地・日程' },
-  { step: 2, label: 'エリア・人数' },
+  { step: 2, label: '目的地・人数' },
   { step: 3, label: '詳細設定' },
   { step: 4, label: '確認' },
 ] as const

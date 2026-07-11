@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { PageHeader } from '@/components/layout/page-header'
+import { AppShell } from '@/components/layout/app-shell'
 import { TripDetailView } from '@/components/trip/trip-detail-view'
-import { SiteHeader } from '@/components/site-header'
 import { getTripDetailForUser } from '@/lib/trips/service'
 import { createClient } from '@/utils/supabase/server'
 
@@ -30,15 +29,15 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
     const message =
       error instanceof Error ? error.message : 'データの取得に失敗しました'
     return (
-      <>
-        <SiteHeader email={user.email} showLogout />
-        <main className="mx-auto max-w-3xl px-6 py-8">
-          <div>データの取得に失敗しました: {message}</div>
-          <Link href="/trips" className="mt-4 inline-block text-sm underline">
-            マイプランに戻る
-          </Link>
-        </main>
-      </>
+      <AppShell email={user.email} showLogout title="プラン詳細">
+        <div className="carrip-panel p-6 text-sm text-red-700">{message}</div>
+        <Link
+          href="/trips"
+          className="mt-4 inline-block text-sm font-extrabold text-brand-dark underline"
+        >
+          マイプランに戻る
+        </Link>
+      </AppShell>
     )
   }
 
@@ -47,12 +46,13 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   }
 
   return (
-    <>
-      <SiteHeader email={user.email} showLogout />
-      <main className="mx-auto max-w-3xl px-6 py-8">
-        <PageHeader title="プラン詳細" showBack backHref="/trips" />
-        <TripDetailView detail={detail} />
-      </main>
-    </>
+    <AppShell
+      email={user.email}
+      showLogout
+      title="プラン詳細"
+      subtitle={`${detail.trip.origin} 出発 · ${detail.trip.prefecture?.join('、')}`}
+    >
+      <TripDetailView detail={detail} />
+    </AppShell>
   )
 }

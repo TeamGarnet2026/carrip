@@ -74,8 +74,8 @@ export function RouteCard({
           <p className="font-medium">{formatYen(route.total_cost)}</p>
         </div>
         <div>
-          <p className="text-xs text-neutral-500">1人あたり</p>
-          <p className="font-medium text-teal-700 dark:text-teal-400">
+          <p className="text-xs text-muted">1人あたり</p>
+          <p className="font-extrabold text-brand-dark">
             {formatYen(route.cost_per_person)}
           </p>
         </div>

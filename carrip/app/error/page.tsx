@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { SiteHeader } from '@/components/site-header'
+import { AppShell } from '@/components/layout/app-shell'
 import { Button } from '@/components/ui/button'
 
 type ErrorPageProps = {
@@ -23,15 +23,14 @@ export default async function ErrorPage({ searchParams }: ErrorPageProps) {
     '予期せぬエラーが発生しました。しばらく後にお試しください。'
 
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto flex max-w-lg flex-col items-center gap-6 px-6 py-20 text-center">
-        <h1 className="text-2xl font-bold">エラー</h1>
-        <p className="text-neutral-600 dark:text-neutral-400">{message}</p>
+    <AppShell variant="center">
+      <div className="carrip-panel p-8 text-center">
+        <h1 className="text-2xl font-black text-ink">エラー</h1>
+        <p className="mt-3 text-muted">{message}</p>
         {params.code && (
-          <p className="text-xs text-neutral-500">エラーコード: {params.code}</p>
+          <p className="mt-2 text-xs text-muted">エラーコード: {params.code}</p>
         )}
-        <div className="flex flex-wrap justify-center gap-3">
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/plan/new?step=1">
             <Button>旅程を作り直す</Button>
           </Link>
@@ -39,7 +38,7 @@ export default async function ErrorPage({ searchParams }: ErrorPageProps) {
             <Button variant="secondary">トップへ戻る</Button>
           </Link>
         </div>
-      </main>
-    </>
+      </div>
+    </AppShell>
   )
 }

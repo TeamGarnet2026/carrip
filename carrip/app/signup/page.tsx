@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { AuthForm } from '@/components/auth/auth-form'
-import { SiteHeader } from '@/components/site-header'
+import { AppShell } from '@/components/layout/app-shell'
 
 type SignupPageProps = {
   searchParams: Promise<{ redirectTo?: string }>
@@ -18,20 +18,19 @@ export default async function SignupPage({ searchParams }: SignupPageProps) {
   const redirectTo = resolveRedirectTo(params.redirectTo)
 
   return (
-    <>
-      <SiteHeader />
-      <main className="mx-auto flex max-w-md flex-col items-center px-6 py-12">
-        <h1 className="mb-2 text-2xl font-bold">新規登録</h1>
-        <p className="mb-8 text-center text-sm text-neutral-600 dark:text-neutral-400">
+    <AppShell variant="auth">
+      <div className="grid gap-4">
+        <h2 className="m-0 text-[25px] font-black text-ink">新規登録</h2>
+        <p className="m-0 text-[13px] leading-relaxed text-muted">
           幹事向けアカウントを作成します。
         </p>
         <AuthForm mode="signup" redirectTo={redirectTo} />
-        <p className="mt-8 text-sm">
-          <Link href="/" className="text-neutral-600 underline dark:text-neutral-400">
+        <p className="text-sm">
+          <Link href="/" className="font-extrabold text-brand-dark underline">
             トップへ戻る
           </Link>
         </p>
-      </main>
-    </>
+      </div>
+    </AppShell>
   )
 }
