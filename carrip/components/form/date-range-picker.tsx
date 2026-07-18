@@ -34,7 +34,13 @@ export function DateRangePicker({
           max={maxDateIso()}
           value={departureDate}
           onChange={(e) => onChangeDate(e.target.value)}
-          className="w-full rounded-lg border border-line bg-[#fbfcfd] px-3 py-2 text-sm text-ink"
+          className="carrip-field w-full rounded-lg border border-line px-3 py-2 text-sm"
+          style={{
+            colorScheme: 'light',
+            backgroundColor: '#ffffff',
+            color: '#1f2a37',
+            WebkitTextFillColor: '#1f2a37',
+          }}
         />
         <p className="mt-1 text-xs text-neutral-500">今日から180日以内</p>
       </div>

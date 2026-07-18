@@ -33,13 +33,22 @@
     font-family: var(--font-sans);
   }
 
-  /* iOS / ダークモード端末で入力欄が黒塗りになるのを防ぐ */
+  /* iOS ダークモードで入力欄が黒塗りになるのを防ぐ（!important で上書き） */
   input:not([type='checkbox']):not([type='radio']),
   textarea,
   select {
-    color-scheme: light;
-    background-color: #fbfcfd;
-    color: var(--color-ink);
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f2a37 !important;
+    -webkit-text-fill-color: #1f2a37;
+    caret-color: #1f2a37;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #6b7280 !important;
+    -webkit-text-fill-color: #6b7280;
+    opacity: 1;
   }
 
   input:-webkit-autofill,
@@ -47,9 +56,17 @@
   input:-webkit-autofill:focus,
   textarea:-webkit-autofill,
   select:-webkit-autofill {
-    -webkit-text-fill-color: var(--color-ink);
-    box-shadow: 0 0 0 1000px #fbfcfd inset;
+    -webkit-text-fill-color: #1f2a37 !important;
+    caret-color: #1f2a37;
+    box-shadow: 0 0 0 1000px #ffffff inset !important;
     transition: background-color 99999s ease-out;
+  }
+
+  .carrip-field {
+    color-scheme: light !important;
+    background-color: #ffffff !important;
+    color: #1f2a37 !important;
+    -webkit-text-fill-color: #1f2a37;
   }
 }
 
