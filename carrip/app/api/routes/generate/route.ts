@@ -14,6 +14,7 @@ import {
 import { generateRouteSearchStub } from '@/lib/routes/generate-stub'
 import { routeGenerateSchema } from '@/lib/routes/schema'
 
+
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url)
   const mode = searchParams.get('mode')

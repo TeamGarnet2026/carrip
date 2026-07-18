@@ -3,6 +3,7 @@ import { ApiTestPanel } from '@/components/dev/api-test-panel'
 import { AppShell } from '@/components/layout/app-shell'
 import { createClient } from '@/utils/supabase/server'
 
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
 export default async function TestApiPage() {

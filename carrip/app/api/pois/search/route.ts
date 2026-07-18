@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
 import { requireAuthUser } from '@/lib/api/auth'
+
 import { isGoogleCloudConfigured } from '@/lib/google/config'
 import {
   searchRestAreas,

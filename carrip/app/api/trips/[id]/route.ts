@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAuthUser } from '@/lib/api/auth'
 import { deleteTripForUser, getTripDetailForUser } from '@/lib/trips/service'
 
+
 type RouteParams = {
   params: Promise<{ id: string }>
 }

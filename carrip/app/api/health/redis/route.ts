@@ -5,6 +5,7 @@ import {
 } from '@/lib/cache/route-cache'
 import { isRedisConfigured, pingRedis } from '@/lib/redis/client'
 
+
 export async function GET() {
   const cacheBackend = getCacheBackend()
 

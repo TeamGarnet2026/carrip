@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { AuthForm } from '@/components/auth/auth-form'
 import { AppShell } from '@/components/layout/app-shell'
 
+export const runtime = 'edge'
+
 type LoginPageProps = {
   searchParams: Promise<{ redirectTo?: string }>
 }

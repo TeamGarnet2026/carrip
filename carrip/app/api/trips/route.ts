@@ -7,6 +7,7 @@ import {
   listTripsForUser,
 } from '@/lib/trips/service'
 
+
 export async function GET() {
   const auth = await requireAuthUser()
   if (auth.response) return auth.response
