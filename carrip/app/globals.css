@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* システムダークモードで dark: が効かないようにする（アプリはライト固定） */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --color-ink: #1f2a37;
   --color-muted: #6b7280;
@@ -17,16 +20,36 @@
 }
 
 @layer base {
-  html,
-  body {
+  html {
     height: 100%;
+    color-scheme: light;
   }
 
   body {
+    height: 100%;
     margin: 0;
     background-color: var(--color-bg);
     color: var(--color-ink);
     font-family: var(--font-sans);
+  }
+
+  /* iOS / ダークモード端末で入力欄が黒塗りになるのを防ぐ */
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    color-scheme: light;
+    background-color: #fbfcfd;
+    color: var(--color-ink);
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: var(--color-ink);
+    box-shadow: 0 0 0 1000px #fbfcfd inset;
+    transition: background-color 99999s ease-out;
   }
 }
 

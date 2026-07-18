@@ -24,6 +24,7 @@ import {
   type LatLng,
 } from '@/lib/maps/route-corridor'
 import { isNavitimeConfigured } from '@/lib/navitime/config'
+import { PREFECTURE_META } from '@/lib/plan/prefecture-meta'
 import {
   insertDriverChangeStops,
   isTouristStop,
@@ -116,6 +117,12 @@ async function buildDestinationPoints(
   const destinations: LatLng[] = []
 
   for (const prefecture of prefectures) {
+    // 都道府県はメタ座標を優先（Places 枠を消費しない）
+    const meta = PREFECTURE_META[prefecture]
+    if (meta) {
+      destinations.push({ lat: meta.lat, lng: meta.lng })
+      continue
+    }
     const point = await geocodeAddress(prefecture)
     if (point) destinations.push(point)
   }

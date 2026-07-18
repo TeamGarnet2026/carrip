@@ -54,7 +54,7 @@ export function BudgetInput({
           onChange={(e) =>
             onChange(e.target.value ? Number(e.target.value) : null)
           }
-          className="w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          className="w-full rounded-lg border border-line bg-[#fbfcfd] px-3 py-2 text-sm text-ink"
         />
         {value != null && mode === 'total' && (
           <p className="mt-1 text-xs text-neutral-500">

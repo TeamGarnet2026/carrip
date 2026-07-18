@@ -57,7 +57,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          className="w-full rounded border border-line bg-[#fbfcfd] px-3 py-2 text-sm text-ink"
         />
       </div>
       <div>
@@ -72,22 +72,22 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           minLength={6}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+          className="w-full rounded border border-line bg-[#fbfcfd] px-3 py-2 text-sm text-ink"
         />
       </div>
       {message && (
-        <p className="text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="text-sm text-red-600" role="alert">
           {message}
         </p>
       )}
       <button
         type="submit"
         disabled={loading}
-        className="rounded bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
+        className="rounded bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
       >
         {loading ? '処理中…' : isLogin ? 'ログイン' : '新規登録'}
       </button>
-      <p className="text-center text-sm text-neutral-600 dark:text-neutral-400">
+      <p className="text-center text-sm text-muted">
         {isLogin ? (
           <>
             アカウントをお持ちでない方は{' '}
