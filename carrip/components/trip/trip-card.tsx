@@ -2,7 +2,10 @@ import Link from 'next/link'
 import type { Tables } from '@/types/supabase'
 
 type TripCardProps = {
-  trip: Tables<'trips'>
+  trip: Pick<
+    Tables<'trips'>,
+    'id' | 'origin' | 'prefecture' | 'departure_date' | 'days' | 'people'
+  >
 }
 
 export function TripCard({ trip }: TripCardProps) {
@@ -10,6 +13,7 @@ export function TripCard({ trip }: TripCardProps) {
     <li>
       <Link
         href={`/trips/${trip.id}`}
+        prefetch={false}
         className="carrip-panel block p-4 transition hover:border-brand/50"
       >
         <p className="font-extrabold text-ink">{trip.origin} 出発</p>

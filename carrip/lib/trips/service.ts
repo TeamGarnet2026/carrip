@@ -122,9 +122,12 @@ export async function createTripForUser(
 export async function listTripsForUser(supabase: DbClient, userId: string) {
   const { data, error } = await supabase
     .from('trips')
-    .select('*')
+    .select(
+      'id, origin, prefecture, departure_date, days, people, last_accessed_at, created_at'
+    )
     .eq('owner_id', userId)
     .order('last_accessed_at', { ascending: false })
+    .limit(50)
 
   if (error) {
     throw new Error(error.message)
@@ -154,21 +157,10 @@ export async function getTripDetailForUser(
 
   const { data: routes, error: routesError } = await supabase
     .from('routes')
-    .select('*')
-    .eq('trip_id', trip.id)
-    .order('created_at', { ascending: true })
-
-  if (routesError) {
-    throw new Error(routesError.message)
-  }
-
-  const routeDetails = []
-
-  for (const route of routes ?? []) {
-    const { data: stops, error: stopsError } = await supabase
-      .from('route_stops')
-      .select(
-        `
+    .select(
+      `
+      *,
+      route_stops (
         id,
         stop_order,
         stay_minutes,
@@ -185,22 +177,29 @@ export async function getTripDetailForUser(
           category,
           rating
         )
-      `
       )
-      .eq('route_id', route.id)
-      .order('stop_order', { ascending: true })
+    `
+    )
+    .eq('trip_id', trip.id)
+    .order('created_at', { ascending: true })
 
-    if (stopsError) {
-      throw new Error(stopsError.message)
-    }
-
-    routeDetails.push({
-      ...route,
-      stops: stops ?? [],
-    })
+  if (routesError) {
+    throw new Error(routesError.message)
   }
 
-  await supabase
+  const routeDetails = (routes ?? []).map((route) => {
+    const { route_stops, ...routeRow } = route
+    const stops = [...(route_stops ?? [])].sort(
+      (a, b) => a.stop_order - b.stop_order
+    )
+    return {
+      ...routeRow,
+      stops,
+    }
+  })
+
+  // 一覧の並び替え用。レスポンスをブロックしない
+  void supabase
     .from('trips')
     .update({ last_accessed_at: new Date().toISOString() })
     .eq('id', trip.id)

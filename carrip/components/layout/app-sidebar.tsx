@@ -9,19 +9,27 @@ type AppSidebarProps = {
   showLogout?: boolean
 }
 
-const NAV_ITEMS = [
-  { href: '/', label: 'ホーム', icon: '⌂', match: (path: string) => path === '/' },
+const NAV_ITEMS: Array<{
+  href: string
+  label: string
+  icon: string
+  match: (path: string) => boolean
+  prefetch?: boolean
+}> = [
+  { href: '/', label: 'ホーム', icon: '⌂', match: (path) => path === '/' },
   {
     href: '/plan/new?step=1',
     label: '条件入力',
     icon: '✎',
-    match: (path: string) => path.startsWith('/plan/new') || path.startsWith('/plan/generating'),
+    match: (path) =>
+      path.startsWith('/plan/new') || path.startsWith('/plan/generating'),
   },
   {
     href: '/trips',
     label: '保存済み',
     icon: '▣',
-    match: (path: string) => path.startsWith('/trips'),
+    match: (path) => path.startsWith('/trips'),
+    prefetch: false,
   },
 ]
 
@@ -44,6 +52,7 @@ export function AppSidebar({ email, showLogout }: AppSidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={item.prefetch}
               className={`carrip-nav-link${active ? ' active' : ''}`}
             >
               <span aria-hidden>{item.icon}</span>

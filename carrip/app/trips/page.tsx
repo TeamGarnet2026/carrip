@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { AppShell } from '@/components/layout/app-shell'
 import { TripCard } from '@/components/trip/trip-card'
 import { Button } from '@/components/ui/button'
+import { listTripsForUser } from '@/lib/trips/service'
 import { createClient } from '@/utils/supabase/server'
-import { translateSupabaseError } from '@/utils/supabase/error-messages'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,13 +14,26 @@ export default async function TripsPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: trips, error } = await supabase.from('trips').select('*')
-
-  if (error) {
+  if (!user) {
     return (
-      <AppShell email={user?.email} showLogout title="マイプラン">
+      <AppShell title="マイプラン">
+        <div className="carrip-panel p-6 text-sm text-muted">
+          ログインすると保存済みプランを表示できます。
+        </div>
+      </AppShell>
+    )
+  }
+
+  let trips
+  try {
+    trips = await listTripsForUser(supabase, user.id)
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'データの取得に失敗しました'
+    return (
+      <AppShell email={user.email} showLogout title="マイプラン">
         <div className="carrip-panel p-6 text-sm text-red-700">
-          データの取得に失敗しました: {translateSupabaseError(error)}
+          データの取得に失敗しました: {message}
         </div>
       </AppShell>
     )
@@ -28,7 +41,7 @@ export default async function TripsPage() {
 
   return (
     <AppShell
-      email={user?.email}
+      email={user.email}
       showLogout
       title="マイプラン"
       subtitle="保存済みの旅行プラン一覧"
@@ -38,7 +51,7 @@ export default async function TripsPage() {
         </Link>
       }
     >
-      {trips?.length === 0 ? (
+      {trips.length === 0 ? (
         <div className="carrip-panel border-dashed p-8 text-center">
           <p className="text-sm text-muted">保存済みプランはありません</p>
           <Link href="/plan/new?step=1" className="mt-4 inline-block">
