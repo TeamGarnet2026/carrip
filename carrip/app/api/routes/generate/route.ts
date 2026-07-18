@@ -11,11 +11,42 @@ import {
   generateRoutes,
   isRouteGenerationConfigured,
 } from '@/lib/routes/generate'
+import { generateRouteSearchStub } from '@/lib/routes/generate-stub'
 import { routeGenerateSchema } from '@/lib/routes/schema'
 
 export const runtime = 'edge'
 
 export async function POST(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const mode = searchParams.get('mode')
+
+  if (mode === 'stub') {
+    try {
+      const body = await request.json()
+      const params = routeGenerateSchema.parse(body)
+      const result = generateRouteSearchStub(params)
+
+      return NextResponse.json({
+        ...result,
+        cached: false,
+        mode: 'stub',
+        cache_key: 'stub',
+        cache_ttl_seconds: 0,
+      })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return NextResponse.json(
+          { error: '入力内容に誤りがあります', details: error.flatten() },
+          { status: 400 }
+        )
+      }
+
+      const message =
+        error instanceof Error ? error.message : 'スタブ生成に失敗しました'
+      return NextResponse.json({ error: message }, { status: 500 })
+    }
+  }
+
   if (!isRouteGenerationConfigured()) {
     return NextResponse.json(
       {

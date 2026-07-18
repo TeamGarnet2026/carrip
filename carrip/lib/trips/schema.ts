@@ -9,6 +9,12 @@ const routeStopSchema = z.object({
   address: z.string().min(1),
   lat: z.number(),
   lng: z.number(),
+  category: z.string().optional(),
+  is_rest_stop: z.boolean().optional(),
+  stay_minutes: z.number().int().min(0).max(720).optional(),
+  parking_yen: z.number().int().min(0).max(100000).optional(),
+  parking_source: z.string().optional(),
+  admission_yen_per_person: z.number().int().min(0).max(100000).optional(),
 })
 
 const costBreakdownSchema = z.object({
@@ -46,10 +52,11 @@ export const createTripSchema = z.object({
   origin: z.string().min(1),
   prefecture: z.array(z.string()).min(1).max(5),
   departure_date: z.string().min(1),
-  days: z.number().int().min(1).max(3),
-  people: z.number().int().min(1).max(10),
+  days: z.number().int().min(1).max(7),
+  people: z.number().int().min(1).max(15),
   vehicle: vehicleSchema,
   route: routeCandidateSchema,
+  round_trip: z.boolean().optional(),
 })
 
 export type CreateTripInput = z.infer<typeof createTripSchema>

@@ -1,26 +1,297 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-ink: #1f2a37;
+  --color-muted: #6b7280;
+  --color-line: #d8e2e6;
+  --color-bg: #eef3f4;
+  --color-surface: #ffffff;
+  --color-soft: #f6f8f9;
+  --color-brand: #16847f;
+  --color-brand-dark: #0f6763;
+  --color-accent: #e9a642;
+  --color-sidebar: #17313a;
+  --font-sans: "Yu Gothic", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+  --shadow-carrip: 0 14px 34px rgba(31, 42, 55, 0.08);
+  --animate-carrip-spin: carrip-spin 1s linear infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    margin: 0;
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .carrip-app {
+    width: 100%;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+  }
+
+  .carrip-main {
+    min-width: 0;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .carrip-topbar {
+    min-height: 74px;
+    background: rgba(255, 255, 255, 0.96);
+    border-bottom: 1px solid var(--color-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 14px 28px;
+  }
+
+  .carrip-workspace {
+    min-height: 0;
+    padding: 20px 24px 24px;
+    overflow: auto;
+  }
+
+  .carrip-sidebar {
+    min-height: 100dvh;
+    background: var(--color-sidebar);
+    color: #eef7f6;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .carrip-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 24px;
+    font-weight: 900;
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .carrip-brand-mark {
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: var(--color-brand);
+    display: grid;
+    place-items: center;
+    box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.12);
+    font-size: 18px;
+  }
+
+  .carrip-nav {
+    display: grid;
+    gap: 8px;
+  }
+
+  .carrip-nav-link {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 13px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #c9d9dc;
+    background: transparent;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 700;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease,
+      border-color 0.15s ease;
+  }
+
+  .carrip-nav-link:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .carrip-nav-link.active {
+    color: #ffffff;
+    background: rgba(22, 132, 127, 0.28);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  .carrip-trip-note {
+    margin-top: auto;
+    padding: 16px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    font-size: 12px;
+    line-height: 1.6;
+    color: #b7cbd0;
+  }
+
+  .carrip-trip-note b {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #eef7f6;
+  }
+
+  .carrip-panel {
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    box-shadow: var(--shadow-carrip);
+  }
+
+  .carrip-entry-screen {
+    min-height: 100dvh;
+    display: grid;
+    place-items: center;
+    padding: 28px;
+    color: #ffffff;
+    background:
+      linear-gradient(90deg, rgba(23, 49, 58, 0.92), rgba(23, 49, 58, 0.58)),
+      url("https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80")
+        center / cover;
+  }
+
+  .carrip-auth-screen {
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+    background: var(--color-bg);
+  }
+
+  .carrip-auth-visual {
+    padding: 44px;
+    color: #ffffff;
+    background:
+      linear-gradient(90deg, rgba(23, 49, 58, 0.92), rgba(23, 49, 58, 0.62)),
+      url("https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80")
+        center / cover;
+    display: grid;
+    align-content: end;
+    gap: 18px;
+  }
+
+  .carrip-auth-panel {
+    background: var(--color-surface);
+    padding: 34px;
+    display: grid;
+    align-content: center;
+    gap: 22px;
+    box-shadow: -12px 0 34px rgba(31, 42, 55, 0.08);
+  }
+
+  .carrip-wizard-card {
+    width: min(720px, 100%);
+    margin: 0 auto;
+    background: var(--color-surface);
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    box-shadow: var(--shadow-carrip);
+    overflow: hidden;
+  }
+
+  .carrip-loading-card {
+    width: min(520px, 100%);
+    padding: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-carrip);
+    text-align: center;
+  }
+
+  .carrip-spinner {
+    width: 54px;
+    height: 54px;
+    border-radius: 50%;
+    border: 5px solid var(--color-line);
+    border-top-color: var(--color-brand);
+    animation: carrip-spin 1s linear infinite;
+  }
+}
+
+@layer utilities {
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+}
+
+@keyframes carrip-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 960px) {
+  @layer components {
+    .carrip-app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto minmax(0, 1fr);
+    }
+
+    .carrip-sidebar {
+      min-height: auto;
+      padding: 10px 12px;
+      gap: 10px;
+    }
+
+    .carrip-brand span:last-child {
+      font-size: 18px;
+    }
+
+    .carrip-nav {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+
+    .carrip-nav-link {
+      justify-content: center;
+      min-height: 40px;
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+    .carrip-trip-note {
+      display: none;
+    }
+
+    .carrip-topbar {
+      min-height: 64px;
+      padding: 10px 14px;
+    }
+
+    .carrip-workspace {
+      padding: 14px 14px 18px;
+    }
+
+    .carrip-auth-screen {
+      grid-template-columns: 1fr;
+    }
+
+    .carrip-auth-visual {
+      display: none;
+    }
+  }
 }

@@ -2,6 +2,7 @@ import {
   conditionForRouteVariant,
   getNavitimeConfig,
 } from '@/lib/navitime/config'
+import { isDirectRoute } from '@/lib/routes/cost-focused-plan'
 import type { RouteGenerateRequest } from '@/lib/routes/types'
 import { applyEtcTollDiscount } from '@/lib/toll/etc-discount'
 import { extractTollYen } from '@/lib/toll/extract-toll'
@@ -133,14 +134,19 @@ export async function fetchNavitimeCarRoute(
     throw new Error('ルート算出に必要な停留地がありません')
   }
 
-  const goal = stops[stops.length - 1]
-  const via = stops.slice(0, -1).map((stop) => ({
+  const roundTrip = request.options?.round_trip === true
+  const goal = roundTrip
+    ? { lat: origin.lat, lng: origin.lng }
+    : stops[stops.length - 1]
+  const viaStops = roundTrip ? stops : stops.slice(0, -1)
+  const via = viaStops.map((stop) => ({
     lat: stop.lat,
     lon: stop.lng,
     name: stop.name,
   }))
 
-  const useHighway = request.options?.use_highway !== false
+  const useHighway =
+    isDirectRoute(routeId) || request.options?.use_highway !== false
   let condition = conditionForRouteVariant(routeId)
   if (!useHighway) {
     condition = 'free_only'

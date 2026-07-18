@@ -1,8 +1,7 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useCallback, useState } from 'react'
-import { RoutesGoogleMap } from '@/components/routes/routes-google-map'
-import { RoutesOsmMap } from '@/components/routes/routes-osm-map'
 import { getGoogleMapsApiKey } from '@/lib/google/maps-key'
 import type { RouteCandidate } from '@/lib/routes/types'
 
@@ -12,6 +11,28 @@ type RoutesMapProps = {
   onSelectRoute: (routeId: string) => void
   originLabel?: string
 }
+
+const mapLoading = (
+  <div className="flex h-[380px] items-center justify-center rounded border border-dashed border-line text-sm text-muted">
+    地図を読み込み中…
+  </div>
+)
+
+const RoutesGoogleMap = dynamic(
+  () =>
+    import('@/components/routes/routes-google-map').then(
+      (mod) => mod.RoutesGoogleMap
+    ),
+  { ssr: false, loading: () => mapLoading }
+)
+
+const RoutesOsmMap = dynamic(
+  () =>
+    import('@/components/routes/routes-osm-map').then(
+      (mod) => mod.RoutesOsmMap
+    ),
+  { ssr: false, loading: () => mapLoading }
+)
 
 const API_KEY_RESTRICTION_HINT =
   'Maps JavaScript API へのリクエストは届いていますがエラー 100% の場合、API キーの「API の制限」に Maps JavaScript API が含まれていない可能性が高いです（Places API のみ許可していると ApiTargetBlockedMapError になります）。'

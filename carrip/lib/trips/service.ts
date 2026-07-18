@@ -27,7 +27,7 @@ async function upsertPoi(
       lat: stop.lat,
       lng: stop.lng,
       prefecture: prefecture ?? null,
-      category: 'tourist',
+      category: stop.category ?? 'tourist',
     })
     .select('id')
     .single()
@@ -53,7 +53,10 @@ export async function createTripForUser(
       departure_date: input.departure_date,
       days: input.days,
       people: input.people,
-      vehicle_json: input.vehicle,
+      vehicle_json: {
+        ...input.vehicle,
+        ...(input.round_trip != null ? { round_trip: input.round_trip } : {}),
+      },
       last_accessed_at: new Date().toISOString(),
     })
     .select('*')
@@ -67,10 +70,13 @@ export async function createTripForUser(
     .from('routes')
     .insert({
       trip_id: trip.id,
+      rank: 1,
       total_distance_km: input.route.total_distance_km,
       total_duration_min: input.route.total_duration_min,
       total_cost: input.route.total_cost,
+      cost_per_person: input.route.cost_per_person,
       cost_breakdown_json: input.route.cost_breakdown,
+      is_confirmed: true,
     })
     .select('*')
     .single()
@@ -88,11 +94,16 @@ export async function createTripForUser(
       route_id: route.id,
       poi_id: poiId,
       stop_order: index + 1,
-      stay_minutes: 60,
+      day_number: 1,
+      stay_minutes: stop.stay_minutes ?? 60,
+      is_rest_stop: stop.is_rest_stop ?? false,
       parking_cost:
-        Math.round(input.route.cost_breakdown.parking / input.route.stops.length) ||
-        null,
-      admission_fee: null,
+        stop.parking_yen ??
+        (Math.round(
+          input.route.cost_breakdown.parking / input.route.stops.length
+        ) ||
+          null),
+      admission_fee: stop.admission_yen_per_person ?? null,
     })
   }
 
@@ -111,9 +122,12 @@ export async function createTripForUser(
 export async function listTripsForUser(supabase: DbClient, userId: string) {
   const { data, error } = await supabase
     .from('trips')
-    .select('*')
+    .select(
+      'id, origin, prefecture, departure_date, days, people, last_accessed_at, created_at'
+    )
     .eq('owner_id', userId)
     .order('last_accessed_at', { ascending: false })
+    .limit(50)
 
   if (error) {
     throw new Error(error.message)
@@ -143,26 +157,16 @@ export async function getTripDetailForUser(
 
   const { data: routes, error: routesError } = await supabase
     .from('routes')
-    .select('*')
-    .eq('trip_id', trip.id)
-    .order('created_at', { ascending: true })
-
-  if (routesError) {
-    throw new Error(routesError.message)
-  }
-
-  const routeDetails = []
-
-  for (const route of routes ?? []) {
-    const { data: stops, error: stopsError } = await supabase
-      .from('route_stops')
-      .select(
-        `
+    .select(
+      `
+      *,
+      route_stops (
         id,
         stop_order,
         stay_minutes,
         parking_cost,
         admission_fee,
+        is_rest_stop,
         pois (
           id,
           google_place_id,
@@ -173,22 +177,29 @@ export async function getTripDetailForUser(
           category,
           rating
         )
-      `
       )
-      .eq('route_id', route.id)
-      .order('stop_order', { ascending: true })
+    `
+    )
+    .eq('trip_id', trip.id)
+    .order('created_at', { ascending: true })
 
-    if (stopsError) {
-      throw new Error(stopsError.message)
-    }
-
-    routeDetails.push({
-      ...route,
-      stops: stops ?? [],
-    })
+  if (routesError) {
+    throw new Error(routesError.message)
   }
 
-  await supabase
+  const routeDetails = (routes ?? []).map((route) => {
+    const { route_stops, ...routeRow } = route
+    const stops = [...(route_stops ?? [])].sort(
+      (a, b) => a.stop_order - b.stop_order
+    )
+    return {
+      ...routeRow,
+      stops,
+    }
+  })
+
+  // 一覧の並び替え用。レスポンスをブロックしない
+  void supabase
     .from('trips')
     .update({ last_accessed_at: new Date().toISOString() })
     .eq('id', trip.id)
@@ -197,4 +208,36 @@ export async function getTripDetailForUser(
     trip,
     routes: routeDetails,
   }
+}
+
+export async function deleteTripForUser(
+  supabase: DbClient,
+  userId: string,
+  tripId: string
+) {
+  const { data: trip, error: findError } = await supabase
+    .from('trips')
+    .select('id')
+    .eq('id', tripId)
+    .eq('owner_id', userId)
+    .maybeSingle()
+
+  if (findError) {
+    throw new Error(findError.message)
+  }
+  if (!trip) {
+    return false
+  }
+
+  const { error: deleteError } = await supabase
+    .from('trips')
+    .delete()
+    .eq('id', tripId)
+    .eq('owner_id', userId)
+
+  if (deleteError) {
+    throw new Error(deleteError.message)
+  }
+
+  return true
 }

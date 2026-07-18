@@ -86,7 +86,10 @@ export type Database = {
       route_stops: {
         Row: {
           admission_fee: number | null
+          created_at: string
+          day_number: number
           id: string
+          is_rest_stop: boolean
           parking_cost: number | null
           poi_id: string
           route_id: string
@@ -95,7 +98,10 @@ export type Database = {
         }
         Insert: {
           admission_fee?: number | null
+          created_at?: string
+          day_number: number
           id?: string
+          is_rest_stop?: boolean
           parking_cost?: number | null
           poi_id: string
           route_id: string
@@ -104,7 +110,10 @@ export type Database = {
         }
         Update: {
           admission_fee?: number | null
+          created_at?: string
+          day_number?: number
           id?: string
+          is_rest_stop?: boolean
           parking_cost?: number | null
           poi_id?: string
           route_id?: string
@@ -131,33 +140,45 @@ export type Database = {
       routes: {
         Row: {
           cost_breakdown_json: Json | null
+          cost_per_person: number | null
           created_at: string
           id: string
+          is_confirmed: boolean | null
+          rank: number
           score: number | null
           total_cost: number | null
           total_distance_km: number | null
           total_duration_min: number | null
           trip_id: string
+          updated_at: string | null
         }
         Insert: {
           cost_breakdown_json?: Json | null
+          cost_per_person?: number | null
           created_at?: string
           id?: string
+          is_confirmed?: boolean | null
+          rank: number
           score?: number | null
           total_cost?: number | null
           total_distance_km?: number | null
           total_duration_min?: number | null
           trip_id: string
+          updated_at?: string | null
         }
         Update: {
           cost_breakdown_json?: Json | null
+          cost_per_person?: number | null
           created_at?: string
           id?: string
+          is_confirmed?: boolean | null
+          rank?: number
           score?: number | null
           total_cost?: number | null
           total_distance_km?: number | null
           total_duration_min?: number | null
           trip_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
