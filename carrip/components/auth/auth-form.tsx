@@ -57,7 +57,13 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded border border-line bg-[#fbfcfd] px-3 py-2 text-sm text-ink"
+          className="carrip-field w-full rounded border border-line px-3 py-2 text-sm"
+          style={{
+            colorScheme: 'light',
+            backgroundColor: '#ffffff',
+            color: '#1f2a37',
+            WebkitTextFillColor: '#1f2a37',
+          }}
         />
       </div>
       <div>
@@ -72,7 +78,13 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           minLength={6}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded border border-line bg-[#fbfcfd] px-3 py-2 text-sm text-ink"
+          className="carrip-field w-full rounded border border-line px-3 py-2 text-sm"
+          style={{
+            colorScheme: 'light',
+            backgroundColor: '#ffffff',
+            color: '#1f2a37',
+            WebkitTextFillColor: '#1f2a37',
+          }}
         />
       </div>
       {message && (

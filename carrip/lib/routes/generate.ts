@@ -15,6 +15,7 @@ import {
   resolveAdmissionFeesForStops,
   searchTouristSpots,
 } from '@/lib/google/places'
+import { buildSyntheticPlacesForPrefecture } from '@/lib/google/synthetic-places'
 import type { PoiPlace } from '@/lib/google/types'
 import {
   DESTINATION_RADIUS_KM,
@@ -71,15 +72,25 @@ async function searchTouristSpotsWithCache(
     const places = await searchTouristSpots(prefecture, preferences)
     if (places.length > 0) {
       await setCachedPlacesByPrefecture(prefecture, preferences, places)
+      return { places, fromCache: false }
     }
-    return { places, fromCache: false }
   } catch (error) {
     if (cached?.length) {
       console.warn('Places API failed, using cached POI data:', error)
       return { places: cached, fromCache: true }
     }
-    throw error
+    console.warn(
+      'Places API failed, using synthetic destination POIs:',
+      error
+    )
   }
+
+  const synthetic = buildSyntheticPlacesForPrefecture(prefecture)
+  if (synthetic.length > 0) {
+    return { places: synthetic, fromCache: true }
+  }
+
+  return { places: [], fromCache: false }
 }
 
 async function searchTouristSpotsForPrefecturesWithCache(
