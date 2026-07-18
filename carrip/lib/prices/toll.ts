@@ -1,3 +1,4 @@
+import { sha256Hex } from '@/lib/crypto/sha256'
 import { getNavitimeConfig } from '@/lib/navitime/config'
 import { applyEtcTollDiscount } from '@/lib/toll/etc-discount'
 import { extractTollYen } from '@/lib/toll/extract-toll'
@@ -34,13 +35,11 @@ function buildStartTime(query: TollPriceQuery): string {
   return `${date}T${normalizedTime}`
 }
 
-export function buildTollCacheKey(query: TollPriceQuery): string {
-  const str = JSON.stringify(query)
-  let h = 5381
-  for (let i = 0; i < str.length; i++) {
-    h = (Math.imul(31, h) + str.charCodeAt(i)) | 0
-  }
-  return `prices:toll:${(h >>> 0).toString(16).padStart(8, '0')}`
+export async function buildTollCacheKey(
+  query: TollPriceQuery
+): Promise<string> {
+  const hash = await sha256Hex(JSON.stringify(query))
+  return `prices:toll:${hash}`
 }
 
 function resolveTollYen(
@@ -110,6 +109,6 @@ export async function queryTollPrice(
     distance_km: Math.round((move.distance / 1000) * 10) / 10,
     duration_min: move.time,
     source: 'navitime',
-    cache_key: buildTollCacheKey(query),
+    cache_key: await buildTollCacheKey(query),
   }
 }

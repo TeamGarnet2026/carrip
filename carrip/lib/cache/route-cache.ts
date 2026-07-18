@@ -1,4 +1,3 @@
-import { createHash } from 'crypto'
 import {
   ROUTE_CACHE_KEY_PREFIX,
   ROUTE_CACHE_TTL_SECONDS,
@@ -7,6 +6,7 @@ import {
   getMemoryCachedRouteSearch,
   setMemoryCachedRouteSearch,
 } from '@/lib/cache/memory-cache'
+import { sha256Hex } from '@/lib/crypto/sha256'
 import { getRedis, isRedisConfigured } from '@/lib/redis/client'
 import type {
   RouteGenerateRequest,
@@ -40,10 +40,10 @@ export function getCacheBackend(): CacheBackend | null {
   return null
 }
 
-export function buildRouteCacheKey(request: RouteGenerateRequest): string {
-  const hash = createHash('sha256')
-    .update(stableStringify(request))
-    .digest('hex')
+export async function buildRouteCacheKey(
+  request: RouteGenerateRequest
+): Promise<string> {
+  const hash = await sha256Hex(stableStringify(request))
   return `${ROUTE_CACHE_KEY_PREFIX}${hash}`
 }
 

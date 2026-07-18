@@ -1,0 +1,8 @@
+/** Edge / Node 両対応の SHA-256（node:crypto を使わない） */
+export async function sha256Hex(input: string): Promise<string> {
+  const bytes = new TextEncoder().encode(input)
+  const digest = await crypto.subtle.digest('SHA-256', bytes)
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0')
+  ).join('')
+}

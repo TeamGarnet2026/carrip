@@ -14,7 +14,6 @@ import {
 import { generateRouteSearchStub } from '@/lib/routes/generate-stub'
 import { routeGenerateSchema } from '@/lib/routes/schema'
 
-export const runtime = 'edge'
 
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url)
@@ -71,7 +70,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const params = routeGenerateSchema.parse(body)
-    const cacheKey = buildRouteCacheKey(params)
+    const cacheKey = await buildRouteCacheKey(params)
     const ttlSeconds = getRouteCacheTtlSeconds()
 
     const cached = await getCachedRouteSearch(cacheKey)
