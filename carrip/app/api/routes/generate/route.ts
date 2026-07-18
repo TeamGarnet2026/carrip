@@ -69,7 +69,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json()
     const params = routeGenerateSchema.parse(body)
-    const cacheKey = buildRouteCacheKey(params)
+    const cacheKey = await buildRouteCacheKey(params)
     const ttlSeconds = getRouteCacheTtlSeconds()
 
     const cached = await getCachedRouteSearch(cacheKey)
