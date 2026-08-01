@@ -23,7 +23,8 @@ export type NavitimeRouteCondition =
 export function conditionForRouteVariant(routeId: string): NavitimeRouteCondition {
   switch (routeId) {
     case 'route-1':
-      return 'toll_distance'
+      // コスト重視: 高速道路なし（一般道のみ）
+      return 'free_only'
     case 'route-2':
       return 'toll_time'
     case 'route-3':

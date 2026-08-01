@@ -5,6 +5,7 @@ import {
   isCostFocusedRoute,
   isDestinationRoutingStop,
   isDirectRoute,
+  usesHighwayForRoute,
 } from '@/lib/routes/cost-focused-plan'
 
 describe('cost-focused-plan', () => {
@@ -14,6 +15,12 @@ describe('cost-focused-plan', () => {
     expect(isDirectRoute('route-3')).toBe(false)
     expect(isCostFocusedRoute('route-1')).toBe(true)
     expect(isCostFocusedRoute('route-2')).toBe(false)
+  })
+
+  it('uses highways except for the cost-focused route', () => {
+    expect(usesHighwayForRoute('route-1')).toBe(false)
+    expect(usesHighwayForRoute('route-2')).toBe(true)
+    expect(usesHighwayForRoute('route-3')).toBe(true)
   })
 
   it('builds destination routing stops from prefecture centers', () => {
@@ -38,7 +45,7 @@ describe('cost-focused-plan', () => {
       people: 2,
       vehicle: { type: 'compact' },
     }
-    expect(buildDirectRouteSummary('route-1', request)).toContain('立ち寄りなし')
+    expect(buildDirectRouteSummary('route-1', request)).toContain('一般道のみ')
     expect(buildDirectRouteSummary('route-2', request)).toContain('高速道路のみ')
   })
 

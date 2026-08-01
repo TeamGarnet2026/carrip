@@ -9,7 +9,7 @@ import { isDirectRoute } from '@/lib/routes/cost-focused-plan'
 import type { RouteGenerateRequest } from '@/lib/routes/types'
 
 const ROUTE_VARIANTS = [
-  { id: 'route-1', title: 'コスト重視ルート', focus: '立ち寄りなしで目的地まで直行し、高速料金と所要時間を最小化する' },
+  { id: 'route-1', title: 'コスト重視ルート', focus: '立ち寄りなし・高速道路なしで目的地まで一般道直行し、高速料金をゼロにする' },
   { id: 'route-2', title: 'バランスタイプ', focus: '高速道路のみ・立ち寄りなしで目的地まで直行し、所要時間とのバランスを取る' },
   { id: 'route-3', title: '景観重視ルート', focus: '評価の高い人気スポットを優先する' },
 ] as const
@@ -47,13 +47,13 @@ ${variants}
 ${poiList}
 
 ## ルール
-- route-1（コスト重視）: stop_place_ids は空配列 [] とする（観光地なし・目的地まで直行）
+- route-1（コスト重視）: stop_place_ids は空配列 [] とする（観光地なし・高速道路なし・一般道で目的地まで直行）
 - route-2（バランスタイプ）: stop_place_ids は空配列 [] とする（観光地なし・高速道路のみで直行）
 - route-3（景観重視）: 2〜4 箇所の stop_place_ids を選ぶ
 - route-3 は訪問先都道府県の周辺エリアにある POI のみ選ぶ（出発地付近やルート途中は不可）
 - route-3 は出発地から目的地方向へ近づく順に並べる（目的地到着後に出発地方向へ戻らない）
 - 同じ POI を複数案で使い回してよい
-- summary は日本語 80〜120 字で、その案の魅力を説明する
+- summary は日本語 80〜120 字で、その案の魅力を説明する（route-1 は一般道・高速なしであることに触れる）
 - 必ず次の JSON 形式のみ返す（余計なキーは不要）
 
 {
