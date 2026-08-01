@@ -44,24 +44,26 @@ function validateStep(step: number, form: TripFormValues): Record<string, string
     if (form.people < 1 || form.people > 15) {
       errors.people = '人数は1〜15名で設定してください'
     }
+    if (form.vehicle.type === 'custom') {
+      if (
+        !form.vehicle.fuel_km_l ||
+        form.vehicle.fuel_km_l < 1 ||
+        form.vehicle.fuel_km_l > 200
+      ) {
+        errors.fuel = '燃費は1〜200 km/L の範囲で入力してください'
+      } else if (!form.vehicle.fuel_type) {
+        errors.fuel = '燃料種別を選択してください'
+      }
+    }
   }
 
   if (step === 3) {
-    if (form.vehicle.type === 'custom') {
-      if (!form.vehicle.fuel_km_l || form.vehicle.fuel_km_l < 1 || form.vehicle.fuel_km_l > 200) {
-        errors.fuel = '燃費は1〜200 km/L の範囲で入力してください'
-      }
-    }
     if (
       form.options.maxDriveMin !== 0 &&
       (form.options.maxDriveMin < 30 || form.options.maxDriveMin > 240)
     ) {
-      errors.maxDriveMin = '連続運転上限は30〜240分、または交代なしを選んでください'
-  if (step === 2 && form.vehicle.type === 'custom') {
-    if (!form.vehicle.fuel_km_l || form.vehicle.fuel_km_l < 1 || form.vehicle.fuel_km_l > 200) {
-      errors.fuel = '燃費は1〜200 km/L の範囲で入力してください'
-    } else if (!form.vehicle.fuel_type) {
-      errors.fuel = '燃料種別を選択してください'
+      errors.maxDriveMin =
+        '連続運転上限は30〜240分、または交代なしを選んでください'
     }
   }
 
