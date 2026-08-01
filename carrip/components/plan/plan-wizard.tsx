@@ -46,9 +46,11 @@ function validateStep(step: number, form: TripFormValues): Record<string, string
     }
   }
 
-  if (step === 3 && form.vehicle.type === 'custom') {
+  if (step === 2 && form.vehicle.type === 'custom') {
     if (!form.vehicle.fuel_km_l || form.vehicle.fuel_km_l < 1 || form.vehicle.fuel_km_l > 200) {
       errors.fuel = '燃費は1〜200 km/L の範囲で入力してください'
+    } else if (!form.vehicle.fuel_type) {
+      errors.fuel = '燃料種別を選択してください'
     }
   }
 
