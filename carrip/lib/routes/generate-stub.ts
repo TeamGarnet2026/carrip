@@ -61,9 +61,8 @@ export function generateRouteSearchStub(
         ? []
         : SAMPLE_STOPS.slice(0, index + 2 > 3 ? 3 : index + 2)
       const toll = Math.round(12000 * request.days * factor * 0.25)
-      const fuel = directRoute
-        ? 0
-        : Math.round(12000 * request.days * factor * 0.35)
+      // 直行プランも走行距離は発生するため、観光地なしでも燃料費は計算する
+      const fuel = Math.round(12000 * request.days * factor * 0.35)
       const parking = directRoute
         ? 0
         : stops.reduce((total, stop) => total + (stop.parking_yen ?? 0), 0)
@@ -105,7 +104,7 @@ export function generateRouteSearchStub(
         ],
         cost_breakdown: { fuel, toll, parking, admission },
         cost_sources: {
-          fuel: directRoute ? undefined : ('fixed_fallback' as const),
+          fuel: 'fixed_fallback' as const,
           toll: 'estimate' as const,
           parking: directRoute ? undefined : ('category_default' as const),
           admission: directRoute ? undefined : ('estimate' as const),

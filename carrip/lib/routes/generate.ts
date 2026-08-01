@@ -383,21 +383,15 @@ export async function generateRoutes(
         0
       )
 
-      const costBreakdown = directRoute
-        ? {
-            fuel: 0,
-            toll: navitime.tollYen,
-            parking: 0,
-            admission: 0,
-          }
-        : buildCostBreakdown(
-            request,
-            navitime.distanceKm,
-            navitime.tollYen,
-            admissionFeesPerPerson,
-            parkingYen,
-            fuelPrice.price_yen
-          )
+      // 直行プラン（観光地なし）でも燃料費は距離に応じて必ず計算する
+      const costBreakdown = buildCostBreakdown(
+        request,
+        navitime.distanceKm,
+        navitime.tollYen,
+        directRoute ? [] : admissionFeesPerPerson,
+        directRoute ? 0 : parkingYen,
+        fuelPrice.price_yen
+      )
       const totalCost = sumCostBreakdown(costBreakdown)
       const responseStops = mapStopsForResponse(
         responsePathStops,
@@ -418,7 +412,7 @@ export async function generateRoutes(
         cost_breakdown: costBreakdown,
         cost_sources: directRoute
           ? {
-              fuel: undefined,
+              fuel: fuelPrice.source,
               toll: navitime.degraded ? ('estimate' as const) : ('navitime' as const),
               parking: undefined,
               admission: undefined,
