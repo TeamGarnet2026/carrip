@@ -1,6 +1,8 @@
 import { AppShell } from '@/components/layout/app-shell'
 import { RoutesListPanel } from '@/components/plan/routes-list-panel'
 
+export const runtime = 'edge'
+
 type RouteCandidatesPageProps = {
   params: Promise<{ id: string }>
 }

@@ -2,6 +2,7 @@ import { AppShell } from '@/components/layout/app-shell'
 import { TripSavePanel } from '@/components/plan/trip-save-panel'
 import { createClient } from '@/utils/supabase/server'
 
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
 type PlanConfirmedPageProps = {

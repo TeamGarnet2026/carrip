@@ -3,6 +3,7 @@ import { poiRequestSchema } from '@/types/schemas';
 import { getPOIsByRegionAndPriority } from '@/utils/poi/poiService';
 import { ZodError } from 'zod';
 
+
 interface ValidationError {
   code: string;
   message: string;

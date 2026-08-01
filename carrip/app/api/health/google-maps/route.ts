@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { checkGoogleMapsHealth } from '@/lib/google/maps-health'
 
+
 export async function GET() {
   try {
     const health = await checkGoogleMapsHealth()

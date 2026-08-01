@@ -15,6 +15,7 @@ import {
   resolveAdmissionFeesForStops,
   searchTouristSpots,
 } from '@/lib/google/places'
+import { buildSyntheticPlacesForPrefecture } from '@/lib/google/synthetic-places'
 import type { PoiPlace } from '@/lib/google/types'
 import {
   DESTINATION_RADIUS_KM,
@@ -24,6 +25,7 @@ import {
   type LatLng,
 } from '@/lib/maps/route-corridor'
 import { isNavitimeConfigured } from '@/lib/navitime/config'
+import { PREFECTURE_META } from '@/lib/plan/prefecture-meta'
 import {
   insertDriverChangeStops,
   isTouristStop,
@@ -45,6 +47,7 @@ import {
   buildDirectRouteSummary,
   isDestinationRoutingStop,
   isDirectRoute,
+  usesHighwayForRoute,
 } from '@/lib/routes/cost-focused-plan'
 import { buildFallbackRoutePlans } from '@/lib/routes/plan-fallback'
 import type {
@@ -70,15 +73,25 @@ async function searchTouristSpotsWithCache(
     const places = await searchTouristSpots(prefecture, preferences)
     if (places.length > 0) {
       await setCachedPlacesByPrefecture(prefecture, preferences, places)
+      return { places, fromCache: false }
     }
-    return { places, fromCache: false }
   } catch (error) {
     if (cached?.length) {
       console.warn('Places API failed, using cached POI data:', error)
       return { places: cached, fromCache: true }
     }
-    throw error
+    console.warn(
+      'Places API failed, using synthetic destination POIs:',
+      error
+    )
   }
+
+  const synthetic = buildSyntheticPlacesForPrefecture(prefecture)
+  if (synthetic.length > 0) {
+    return { places: synthetic, fromCache: true }
+  }
+
+  return { places: [], fromCache: false }
 }
 
 async function searchTouristSpotsForPrefecturesWithCache(
@@ -116,6 +129,12 @@ async function buildDestinationPoints(
   const destinations: LatLng[] = []
 
   for (const prefecture of prefectures) {
+    // 都道府県はメタ座標を優先（Places 枠を消費しない）
+    const meta = PREFECTURE_META[prefecture]
+    if (meta) {
+      destinations.push({ lat: meta.lat, lng: meta.lng })
+      continue
+    }
     const point = await geocodeAddress(prefecture)
     if (point) destinations.push(point)
   }
@@ -274,12 +293,12 @@ export async function generateRoutes(
 
   const routeDegradedReasons: DegradedReason[] = []
   const maxDriveMin = request.options?.max_drive_min ?? 120
-  const useHighway = request.options?.use_highway !== false
   const roundTrip = request.options?.round_trip === true
 
   const routes = await Promise.all(
     plans.routes.slice(0, 3).map(async (plan) => {
       const directRoute = isDirectRoute(plan.id)
+      const useHighway = usesHighwayForRoute(plan.id)
 
       let pathStops: PoiPlace[] = directRoute
         ? buildDestinationStopsAsPlaces(request.prefecture, destinations)
@@ -315,7 +334,7 @@ export async function generateRoutes(
             pathStops,
             navitime.sections,
             maxDriveMin,
-            directRoute ? true : useHighway,
+            useHighway,
             originLatLng,
             roundTrip
           )

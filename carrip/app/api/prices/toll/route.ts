@@ -4,6 +4,7 @@ import {
   getCachedTollPrice,
   setCachedTollPrice,
 } from '@/lib/prices/toll-cache'
+
 import { isNavitimeConfigured } from '@/lib/navitime/config'
 import { tollPriceQuerySchema } from '@/lib/prices/schema'
 import { buildTollCacheKey, queryTollPrice } from '@/lib/prices/toll'
@@ -59,7 +60,7 @@ export async function GET(request: Request) {
       departure_time: url.searchParams.get('departure_time') ?? undefined,
     })
 
-    const cacheKey = buildTollCacheKey(query)
+    const cacheKey = await buildTollCacheKey(query)
     const cached = await getCachedTollPrice(cacheKey)
     if (cached) {
       return NextResponse.json({ ...cached, cached: true })

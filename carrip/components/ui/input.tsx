@@ -38,9 +38,15 @@ export function Input({
         value={value}
         disabled={isDisabled}
         onChange={(e) => onChange(e.target.value)}
-        className={`min-h-[42px] w-full rounded-[7px] border px-3 py-2 text-sm text-ink outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
+        style={{
+          colorScheme: 'light',
+          backgroundColor: '#ffffff',
+          color: '#1f2a37',
+          WebkitTextFillColor: '#1f2a37',
+        }}
+        className={`carrip-field min-h-[42px] w-full rounded-[7px] border px-3 py-2 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
           errorMessage ? 'border-red-500' : 'border-line'
-        } bg-[#fbfcfd]`}
+        }`}
       />
       {errorMessage && (
         <p className="mt-1 text-sm text-red-600" role="alert">

@@ -1,5 +1,3 @@
-export const runtime = 'edge'
-
 import Link from 'next/link'
 import { AppShell } from '@/components/layout/app-shell'
 import { Button } from '@/components/ui/button'

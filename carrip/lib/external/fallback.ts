@@ -12,6 +12,7 @@ import {
   fetchNavitimeCarRoute,
   type NavitimeCarRouteResult,
 } from '@/lib/navitime/route-car'
+import { usesHighwayForRoute } from '@/lib/routes/cost-focused-plan'
 import type { RouteGenerateRequest } from '@/lib/routes/types'
 
 export type RouteMetricsFallbackResult = {
@@ -51,7 +52,7 @@ export async function fetchNavitimeCarRouteWithFallback(input: {
     }))
 
     const metrics = await computeRouteMetrics(input.request.origin, poiStops, {
-      useHighway: input.request.options?.use_highway !== false,
+      useHighway: usesHighwayForRoute(input.routeId),
       originLatLng: input.origin,
       roundTrip: input.request.options?.round_trip === true,
     })

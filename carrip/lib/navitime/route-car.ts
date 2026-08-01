@@ -2,7 +2,7 @@ import {
   conditionForRouteVariant,
   getNavitimeConfig,
 } from '@/lib/navitime/config'
-import { isDirectRoute } from '@/lib/routes/cost-focused-plan'
+import { usesHighwayForRoute } from '@/lib/routes/cost-focused-plan'
 import type { RouteGenerateRequest } from '@/lib/routes/types'
 import { applyEtcTollDiscount } from '@/lib/toll/etc-discount'
 import { extractTollYen } from '@/lib/toll/extract-toll'
@@ -145,12 +145,11 @@ export async function fetchNavitimeCarRoute(
     name: stop.name,
   }))
 
-  const useHighway =
-    isDirectRoute(routeId) || request.options?.use_highway !== false
-  let condition = conditionForRouteVariant(routeId)
-  if (!useHighway) {
-    condition = 'free_only'
-  }
+  // コスト重視は一般道固定。他ルートは高速道路を利用
+  const useHighway = usesHighwayForRoute(routeId)
+  const condition = useHighway
+    ? conditionForRouteVariant(routeId)
+    : 'free_only'
 
   const params = new URLSearchParams()
   params.set('start', `${origin.lat},${origin.lng}`)

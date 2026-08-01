@@ -3,6 +3,7 @@ import {
   needsAdmissionDetailsFetch,
   parseAdmissionFeeFromPlace,
 } from '@/lib/google/admission-fee'
+import { lookupLocalGeocode } from '@/lib/google/geocode-fallback'
 import type { PoiPlace } from '@/lib/google/types'
 
 const PREFERENCE_KEYWORDS: Record<string, string> = {
@@ -129,6 +130,10 @@ export async function searchTouristSpotsForPrefectures(
 export async function geocodeAddress(
   address: string
 ): Promise<{ lat: number; lng: number } | null> {
+  // Places 枠を節約するため、既知の地名は API を叩かない
+  const local = lookupLocalGeocode(address)
+  if (local) return local
+
   const apiKey = getGoogleCloudApiKey()
 
   const response = await fetch(
@@ -148,7 +153,13 @@ export async function geocodeAddress(
     }
   )
 
-  if (!response.ok) return null
+  if (!response.ok) {
+    console.warn(
+      `geocodeAddress Places API failed (${response.status}), no local fallback for:`,
+      address
+    )
+    return null
+  }
 
   const data = (await response.json()) as PlacesSearchResponse
   const location = data.places?.[0]?.location

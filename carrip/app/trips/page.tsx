@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { listTripsForUser } from '@/lib/trips/service'
 import { createClient } from '@/utils/supabase/server'
 
+export const runtime = 'edge'
 export const dynamic = 'force-dynamic'
 
 export default async function TripsPage() {

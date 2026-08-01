@@ -57,6 +57,11 @@ function validateStep(step: number, form: TripFormValues): Record<string, string
       (form.options.maxDriveMin < 30 || form.options.maxDriveMin > 240)
     ) {
       errors.maxDriveMin = '連続運転上限は30〜240分、または交代なしを選んでください'
+  if (step === 2 && form.vehicle.type === 'custom') {
+    if (!form.vehicle.fuel_km_l || form.vehicle.fuel_km_l < 1 || form.vehicle.fuel_km_l > 200) {
+      errors.fuel = '燃費は1〜200 km/L の範囲で入力してください'
+    } else if (!form.vehicle.fuel_type) {
+      errors.fuel = '燃料種別を選択してください'
     }
   }
 
@@ -217,21 +222,6 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
             />
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
-                高速道路を利用
-                <input
-                  type="checkbox"
-                  checked={form.options.useHighway}
-                  onChange={(e) =>
-                    updateForm({
-                      options: {
-                        ...form.options,
-                        useHighway: e.target.checked,
-                      },
-                    })
-                  }
-                />
-              </label>
-              <label className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
                 ETCカードあり
                 <input
                   type="checkbox"
@@ -322,6 +312,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
               {form.options.maxDriveMin === 0
                 ? '運転交代地点は提案しません。'
                 : '上限を超える前に運転交代地点を提案します（高速利用時は SA/PA、一般道はコンビニ）。'}
+              上限を超える前に運転交代地点を提案します（コスト重視は一般道・コンビニ、他ルートは高速・SA/PA）。
             </p>
           </>
         )}
@@ -386,8 +377,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   : 'なし'}
               </p>
               <p className="text-neutral-600 dark:text-neutral-400">
-                高速: {form.options.useHighway ? '利用する' : '利用しない'} · ETC:{' '}
-                {form.options.etcCard ? 'あり' : 'なし'} · 出発{' '}
+                ETC: {form.options.etcCard ? 'あり' : 'なし'} · 出発{' '}
                 {form.options.departureTime} ·{' '}
                 {form.options.roundTrip ? '往復（出発地に戻る）' : '片道'}
               </p>
