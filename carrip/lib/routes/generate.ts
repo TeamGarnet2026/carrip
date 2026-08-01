@@ -47,6 +47,7 @@ import {
   buildDirectRouteSummary,
   isDestinationRoutingStop,
   isDirectRoute,
+  usesHighwayForRoute,
 } from '@/lib/routes/cost-focused-plan'
 import { buildFallbackRoutePlans } from '@/lib/routes/plan-fallback'
 import type {
@@ -292,12 +293,12 @@ export async function generateRoutes(
 
   const routeDegradedReasons: DegradedReason[] = []
   const maxDriveMin = request.options?.max_drive_min ?? 120
-  const useHighway = request.options?.use_highway !== false
   const roundTrip = request.options?.round_trip === true
 
   const routes = await Promise.all(
     plans.routes.slice(0, 3).map(async (plan) => {
       const directRoute = isDirectRoute(plan.id)
+      const useHighway = usesHighwayForRoute(plan.id)
 
       let pathStops: PoiPlace[] = directRoute
         ? buildDestinationStopsAsPlaces(request.prefecture, destinations)
@@ -333,7 +334,7 @@ export async function generateRoutes(
             pathStops,
             navitime.sections,
             maxDriveMin,
-            directRoute ? true : useHighway,
+            useHighway,
             originLatLng,
             roundTrip
           )

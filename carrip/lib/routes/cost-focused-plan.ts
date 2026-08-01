@@ -15,6 +15,11 @@ export function isCostFocusedRoute(routeId: string): boolean {
   return routeId === COST_FOCUSED_ROUTE_ID
 }
 
+/** コスト重視は一般道、それ以外は高速道路を利用 */
+export function usesHighwayForRoute(routeId: string): boolean {
+  return !isCostFocusedRoute(routeId)
+}
+
 export function isDestinationRoutingStop(stopId: string): boolean {
   return stopId.startsWith('destination-')
 }
@@ -56,7 +61,7 @@ export function buildDirectRouteSummary(
   if (routeId === BALANCED_ROUTE_ID) {
     return `${request.origin} から ${dest} まで高速道路のみで直行（観光地の立ち寄りなし）。所要時間と走行のバランスを重視した ${request.days} 日のプランです。`
   }
-  return `${request.origin} から ${dest} まで立ち寄りなしで直行。高速料金と所要時間を重視した ${request.days} 日のプランです。`
+  return `${request.origin} から ${dest} まで一般道のみで直行（高速道路なし・観光地の立ち寄りなし）。高速料金を抑えた ${request.days} 日のプランです。`
 }
 
 /** @deprecated buildDirectRouteSummary を使用 */
