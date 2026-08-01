@@ -32,7 +32,13 @@ export const routeGenerateSchema = z.object({
     .object({
       use_highway: z.boolean().optional(),
       departure_time: z.string().optional(),
-      max_drive_min: z.number().int().min(30).max(240).optional(),
+      max_drive_min: z
+        .number()
+        .int()
+        .refine((value) => value === 0 || (value >= 30 && value <= 240), {
+          message: 'max_drive_min は 0（交代なし）または 30〜240 です',
+        })
+        .optional(),
       etc_card: z.boolean().optional(),
       round_trip: z.boolean().optional(),
     })

@@ -46,6 +46,17 @@ function validateStep(step: number, form: TripFormValues): Record<string, string
     }
   }
 
+  if (step === 3) {
+    if (form.vehicle.type === 'custom') {
+      if (!form.vehicle.fuel_km_l || form.vehicle.fuel_km_l < 1 || form.vehicle.fuel_km_l > 200) {
+        errors.fuel = '燃費は1〜200 km/L の範囲で入力してください'
+      }
+    }
+    if (
+      form.options.maxDriveMin !== 0 &&
+      (form.options.maxDriveMin < 30 || form.options.maxDriveMin > 240)
+    ) {
+      errors.maxDriveMin = '連続運転上限は30〜240分、または交代なしを選んでください'
   if (step === 2 && form.vehicle.type === 'custom') {
     if (!form.vehicle.fuel_km_l || form.vehicle.fuel_km_l < 1 || form.vehicle.fuel_km_l > 200) {
       errors.fuel = '燃費は1〜200 km/L の範囲で入力してください'
@@ -249,19 +260,58 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   })
                 }
               />
-              <Stepper
-                label="連続運転上限（分）"
-                value={form.options.maxDriveMin}
-                min={30}
-                max={240}
-                onChange={(maxDriveMin) =>
-                  updateForm({
-                    options: { ...form.options, maxDriveMin },
-                  })
-                }
-              />
+              <div className="space-y-2">
+                <Input
+                  label="連続運転上限（分）"
+                  type="number"
+                  min="30"
+                  max="240"
+                  value={
+                    form.options.maxDriveMin === 0
+                      ? ''
+                      : String(form.options.maxDriveMin)
+                  }
+                  isDisabled={form.options.maxDriveMin === 0}
+                  placeholder={
+                    form.options.maxDriveMin === 0 ? '交代なし' : undefined
+                  }
+                  helperText="30〜240分で入力"
+                  errorMessage={errors.maxDriveMin}
+                  onChange={(raw) => {
+                    const parsed = Number.parseInt(raw, 10)
+                    if (!Number.isFinite(parsed)) return
+                    updateForm({
+                      options: { ...form.options, maxDriveMin: parsed },
+                    })
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const noChange = form.options.maxDriveMin === 0
+                    updateForm({
+                      options: {
+                        ...form.options,
+                        maxDriveMin: noChange ? 120 : 0,
+                      },
+                    })
+                  }}
+                  className={`w-full rounded-[7px] border px-3 py-2 text-sm font-medium transition ${
+                    form.options.maxDriveMin === 0
+                      ? 'border-brand bg-brand/10 text-brand'
+                      : 'border-line bg-[#fbfcfd] text-ink hover:border-brand/40'
+                  }`}
+                >
+                  {form.options.maxDriveMin === 0
+                    ? '交代なし（選択中）'
+                    : '交代なし'}
+                </button>
+              </div>
             </div>
             <p className="text-xs text-neutral-500">
+              {form.options.maxDriveMin === 0
+                ? '運転交代地点は提案しません。'
+                : '上限を超える前に運転交代地点を提案します（高速利用時は SA/PA、一般道はコンビニ）。'}
               上限を超える前に運転交代地点を提案します（コスト重視は一般道・コンビニ、他ルートは高速・SA/PA）。
             </p>
           </>
@@ -332,7 +382,10 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                 {form.options.roundTrip ? '往復（出発地に戻る）' : '片道'}
               </p>
               <p className="text-neutral-600 dark:text-neutral-400">
-                連続運転上限: {form.options.maxDriveMin}分（超過前に交代地点を提案）
+                連続運転上限:{' '}
+                {form.options.maxDriveMin === 0
+                  ? '交代なし'
+                  : `${form.options.maxDriveMin}分（超過前に交代地点を提案）`}
               </p>
             </section>
           </div>
