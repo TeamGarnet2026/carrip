@@ -23,6 +23,14 @@ export default async function TestApiPage() {
       title="API 手動テスト"
       subtitle="開発環境専用ページです"
     >
+      <div className="mb-4">
+        <a
+          href="/test-fuel"
+          className="text-sm font-bold text-brand underline"
+        >
+          ガソリン単価テスト →
+        </a>
+      </div>
       <ApiTestPanel isLoggedIn={Boolean(user)} userEmail={user?.email} />
     </AppShell>
   )

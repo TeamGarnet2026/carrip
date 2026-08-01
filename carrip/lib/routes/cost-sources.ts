@@ -32,6 +32,10 @@ function describeFuelSource(
   source: CostSources['fuel']
 ): CostSourceDisplay {
   switch (source) {
+    case 'enecho_db':
+      return { label: '資源エネルギー庁・都道府県単価', confidence: 'high' }
+    case 'enecho_national':
+      return { label: '資源エネルギー庁・全国平均', confidence: 'medium' }
     case 'government_api':
       return { label: '政府API単価', confidence: 'high' }
     case 'monthly_fallback':

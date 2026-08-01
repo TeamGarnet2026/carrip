@@ -1,4 +1,5 @@
 import fallbackData from '@/data/fuel-prices-fallback.json'
+import { createPublicSupabaseClient } from '@/lib/supabase/public-client'
 import {
   FUEL_PRICE_YEN,
   type FuelType,
@@ -7,6 +8,8 @@ import {
 } from '@/lib/routes/fuel'
 
 export type FuelPriceSource =
+  | 'enecho_db'
+  | 'enecho_national'
   | 'government_api'
   | 'monthly_fallback'
   | 'fixed_fallback'
@@ -21,6 +24,14 @@ export type FuelPriceResult = {
   source: FuelPriceSource
   degraded: boolean
   updated_at?: string
+  survey_date?: string
+}
+
+/** 要件どおりの最終フォールバック単価（円/L） */
+export const DEFAULT_FUEL_PRICE_YEN: FuelPricesByType = {
+  regular: 175,
+  diesel: 145,
+  premium: 195,
 }
 
 type GovernmentApiResponse = {
@@ -35,7 +46,9 @@ function getGovernmentFuelApiUrl(): string | null {
   return process.env.GOVERNMENT_FUEL_API_URL?.trim() || null
 }
 
-function normalizePrices(raw: Partial<FuelPricesByType>): FuelPricesByType | null {
+function normalizePrices(
+  raw: Partial<FuelPricesByType>
+): FuelPricesByType | null {
   const regular = raw.regular
   const diesel = raw.diesel
   const premium = raw.premium
@@ -52,6 +65,88 @@ function normalizePrices(raw: Partial<FuelPricesByType>): FuelPricesByType | nul
   }
 
   return { regular, diesel, premium }
+}
+
+function withDefaults(
+  partial: Partial<FuelPricesByType>
+): FuelPricesByType {
+  return {
+    regular: partial.regular ?? DEFAULT_FUEL_PRICE_YEN.regular,
+    diesel: partial.diesel ?? DEFAULT_FUEL_PRICE_YEN.diesel,
+    premium: partial.premium ?? DEFAULT_FUEL_PRICE_YEN.premium,
+  }
+}
+
+async function fetchFromSupabase(
+  prefecture: string
+): Promise<{
+  prices: FuelPricesByType
+  source: Extract<FuelPriceSource, 'enecho_db' | 'enecho_national'>
+  survey_date?: string
+  updated_at?: string
+} | null> {
+  try {
+    const supabase = createPublicSupabaseClient()
+    if (!supabase) return null
+
+    const { data: prefRow, error: prefError } = await supabase
+      .from('gasoline_prices')
+      .select(
+        'regular_price, premium_price, diesel_price, survey_date, updated_at'
+      )
+      .eq('prefecture_name', prefecture)
+      .maybeSingle()
+
+    if (!prefError && prefRow?.regular_price != null) {
+      return {
+        prices: withDefaults({
+          regular: Number(prefRow.regular_price),
+          premium:
+            prefRow.premium_price != null
+              ? Number(prefRow.premium_price)
+              : undefined,
+          diesel:
+            prefRow.diesel_price != null
+              ? Number(prefRow.diesel_price)
+              : undefined,
+        }),
+        source: 'enecho_db',
+        survey_date: prefRow.survey_date ?? undefined,
+        updated_at: prefRow.updated_at ?? undefined,
+      }
+    }
+
+    const { data: national, error: nationalError } = await supabase
+      .from('gasoline_price_national')
+      .select(
+        'regular_price, premium_price, diesel_price, survey_date, updated_at'
+      )
+      .eq('id', 1)
+      .maybeSingle()
+
+    if (!nationalError && national?.regular_price != null) {
+      return {
+        prices: withDefaults({
+          regular: Number(national.regular_price),
+          premium:
+            national.premium_price != null
+              ? Number(national.premium_price)
+              : undefined,
+          diesel:
+            national.diesel_price != null
+              ? Number(national.diesel_price)
+              : undefined,
+        }),
+        source: 'enecho_national',
+        survey_date: national.survey_date ?? undefined,
+        updated_at: national.updated_at ?? undefined,
+      }
+    }
+  } catch (error) {
+    console.warn('Supabase fuel price lookup failed:', error)
+  }
+
+  return null
 }
 
 async function fetchFromGovernmentApi(
@@ -105,11 +200,30 @@ function loadMonthlyFallback(prefecture: string): {
   }
 }
 
+/**
+ * 単価解決の優先順位:
+ * 1. Supabase（都道府県）
+ * 2. Supabase（全国平均）
+ * 3. GOVERNMENT_FUEL_API_URL（任意の独自API）
+ * 4. 月次 JSON フォールバック
+ * 5. 固定値（レギュラー 175 円など）
+ */
 export async function resolveFuelPricesWithFallback(
   prefecture: string
 ): Promise<Omit<FuelPriceResult, 'fuel_type' | 'price_yen'>> {
-  const apiConfigured = Boolean(getGovernmentFuelApiUrl())
+  const fromDb = await fetchFromSupabase(prefecture)
+  if (fromDb) {
+    return {
+      prefecture,
+      prices: fromDb.prices,
+      source: fromDb.source,
+      degraded: fromDb.source === 'enecho_national',
+      updated_at: fromDb.updated_at,
+      survey_date: fromDb.survey_date,
+    }
+  }
 
+  const apiConfigured = Boolean(getGovernmentFuelApiUrl())
   if (apiConfigured) {
     try {
       const fromApi = await fetchFromGovernmentApi(prefecture)
@@ -127,13 +241,24 @@ export async function resolveFuelPricesWithFallback(
     }
   }
 
-  const monthly = loadMonthlyFallback(prefecture)
+  try {
+    const monthly = loadMonthlyFallback(prefecture)
+    return {
+      prefecture,
+      prices: monthly.prices,
+      source: 'monthly_fallback',
+      degraded: true,
+      updated_at: monthly.updated_at,
+    }
+  } catch (error) {
+    console.warn('Monthly fuel fallback failed, using fixed defaults:', error)
+  }
+
   return {
     prefecture,
-    prices: monthly.prices,
-    source: 'monthly_fallback',
-    degraded: apiConfigured,
-    updated_at: monthly.updated_at,
+    prices: { ...DEFAULT_FUEL_PRICE_YEN },
+    source: 'fixed_fallback',
+    degraded: true,
   }
 }
 

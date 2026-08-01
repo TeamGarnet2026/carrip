@@ -41,6 +41,66 @@ export type Database = {
         }
         Relationships: []
       }
+      gasoline_price_national: {
+        Row: {
+          diesel_price: number | null
+          id: number
+          premium_price: number | null
+          regular_price: number
+          survey_date: string
+          updated_at: string
+        }
+        Insert: {
+          diesel_price?: number | null
+          id?: number
+          premium_price?: number | null
+          regular_price: number
+          survey_date: string
+          updated_at?: string
+        }
+        Update: {
+          diesel_price?: number | null
+          id?: number
+          premium_price?: number | null
+          regular_price?: number
+          survey_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gasoline_prices: {
+        Row: {
+          diesel_price: number | null
+          id: string
+          prefecture_code: string
+          prefecture_name: string
+          premium_price: number | null
+          regular_price: number
+          survey_date: string
+          updated_at: string
+        }
+        Insert: {
+          diesel_price?: number | null
+          id?: string
+          prefecture_code: string
+          prefecture_name: string
+          premium_price?: number | null
+          regular_price: number
+          survey_date: string
+          updated_at?: string
+        }
+        Update: {
+          diesel_price?: number | null
+          id?: string
+          prefecture_code?: string
+          prefecture_name?: string
+          premium_price?: number | null
+          regular_price?: number
+          survey_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pois: {
         Row: {
           category: string | null

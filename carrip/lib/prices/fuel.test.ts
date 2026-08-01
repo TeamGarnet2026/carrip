@@ -24,15 +24,19 @@ describe('resolveFuelPricesWithFallback', () => {
 
   it('uses monthly fallback data when government API is not configured', async () => {
     delete process.env.GOVERNMENT_FUEL_API_URL
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     const result = await resolveFuelPricesWithFallback('京都府')
 
-    expect(result.degraded).toBe(false)
+    expect(result.degraded).toBe(true)
     expect(result.source).toBe('monthly_fallback')
     expect(result.prices.regular).toBe(169)
   })
 
   it('falls back to monthly data when government API fails', async () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     process.env.GOVERNMENT_FUEL_API_URL = 'https://fuel.example.com/prices'
     vi.stubGlobal(
       'fetch',
@@ -47,6 +51,8 @@ describe('resolveFuelPricesWithFallback', () => {
   })
 
   it('uses government API prices when available', async () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     process.env.GOVERNMENT_FUEL_API_URL = 'https://fuel.example.com/prices'
     vi.stubGlobal(
       'fetch',
@@ -71,6 +77,10 @@ describe('resolveFuelPricesWithFallback', () => {
 
 describe('resolveFuelPriceForVehicle', () => {
   it('returns diesel price for custom diesel vehicle', async () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL
+    delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    delete process.env.GOVERNMENT_FUEL_API_URL
+
     const result = await resolveFuelPriceForVehicle('京都府', {
       type: 'custom',
       fuel_type: 'diesel',
