@@ -10,7 +10,7 @@ export type DegradedReason = (typeof DEGRADED_REASONS)[number]
 
 export const DEGRADED_BANNER_MESSAGES: Record<DegradedReason, string> = {
   government_fuel:
-    '政府の燃料価格APIが利用できないため、資源エネルギー庁の月次データで燃料費を計算しています',
+    '最新の給油所価格を取得できないため、月次データまたは固定単価で燃料費を計算しています',
   navitime:
     'NAVITIME APIが利用できないため、距離・時間は推定値、高速料金は0円で計算しています',
   google_routes:

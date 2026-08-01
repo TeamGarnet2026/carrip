@@ -27,7 +27,12 @@ export type CostBreakdown = {
 }
 
 export type CostSources = {
-  fuel?: 'government_api' | 'monthly_fallback' | 'fixed_fallback'
+  fuel?:
+    | 'enecho_db'
+    | 'enecho_national'
+    | 'government_api'
+    | 'monthly_fallback'
+    | 'fixed_fallback'
   toll?: 'navitime' | 'estimate'
   parking?: ParkingSource
   admission?: 'places' | 'estimate'

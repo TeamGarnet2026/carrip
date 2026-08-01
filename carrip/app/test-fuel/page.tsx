@@ -1,11 +1,11 @@
 import { notFound } from 'next/navigation'
-import { ApiTestPanel } from '@/components/dev/api-test-panel'
+import { FuelPriceTestPanel } from '@/components/dev/fuel-price-test-panel'
 import { AppShell } from '@/components/layout/app-shell'
 import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
 
-export default async function TestApiPage() {
+export default async function TestFuelPage() {
   if (process.env.NODE_ENV === 'production') {
     notFound()
   }
@@ -19,18 +19,10 @@ export default async function TestApiPage() {
     <AppShell
       email={user?.email}
       showLogout={Boolean(user)}
-      title="API 手動テスト"
-      subtitle="開発環境専用ページです"
+      title="ガソリン単価テスト"
+      subtitle="都道府県を選んで DB / フォールバック単価を確認します（開発専用）"
     >
-      <div className="mb-4">
-        <a
-          href="/test-fuel"
-          className="text-sm font-bold text-brand underline"
-        >
-          ガソリン単価テスト →
-        </a>
-      </div>
-      <ApiTestPanel isLoggedIn={Boolean(user)} userEmail={user?.email} />
+      <FuelPriceTestPanel />
     </AppShell>
   )
 }

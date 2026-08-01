@@ -20,6 +20,6 @@ describe('degraded reasons', () => {
 
     expect(messages).toHaveLength(2)
     expect(messages[0]).toContain('NAVITIME')
-    expect(messages[1]).toContain('燃料価格API')
+    expect(messages[1]).toContain('給油所価格')
   })
 })
