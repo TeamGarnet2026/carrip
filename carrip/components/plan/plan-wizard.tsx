@@ -58,9 +58,11 @@ function validateStep(step: number, form: TripFormValues): Record<string, string
   }
 
   if (step === 3) {
+    const maxDriveMin = form.options.maxDriveMin
+    // 入力欄を空にしている間は NaN になるため、未入力も範囲外として扱う
     if (
-      form.options.maxDriveMin !== 0 &&
-      (form.options.maxDriveMin < 30 || form.options.maxDriveMin > 240)
+      maxDriveMin !== 0 &&
+      (!Number.isFinite(maxDriveMin) || maxDriveMin < 30 || maxDriveMin > 240)
     ) {
       errors.maxDriveMin =
         '連続運転上限は30〜240分、または交代なしを選んでください'
@@ -284,7 +286,8 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   min="30"
                   max="240"
                   value={
-                    form.options.maxDriveMin === 0
+                    form.options.maxDriveMin === 0 ||
+                    !Number.isFinite(form.options.maxDriveMin)
                       ? ''
                       : String(form.options.maxDriveMin)
                   }
@@ -295,10 +298,17 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   helperText="30〜240分で入力"
                   errorMessage={errors.maxDriveMin}
                   onChange={(raw) => {
+                    // 空欄にして打ち直せるよう、未入力は NaN として保持する。
+                    // 0 は「交代なし」を表すため、手入力の 0 も未入力扱いにする
                     const parsed = Number.parseInt(raw, 10)
-                    if (!Number.isFinite(parsed)) return
                     updateForm({
-                      options: { ...form.options, maxDriveMin: parsed },
+                      options: {
+                        ...form.options,
+                        maxDriveMin:
+                          Number.isFinite(parsed) && parsed !== 0
+                            ? parsed
+                            : Number.NaN,
+                      },
                     })
                   }}
                 />
