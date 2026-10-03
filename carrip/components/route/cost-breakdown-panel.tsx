@@ -1,4 +1,9 @@
 import {
+  deltaTextClass,
+  formatYenDelta,
+  type CostDiff,
+} from '@/lib/routes/cost-diff'
+import {
   describeCostSources,
   type CostConfidence,
 } from '@/lib/routes/cost-sources'
@@ -9,6 +14,8 @@ type CostBreakdownPanelProps = {
   people: number
   compact?: boolean
   sources?: CostSources
+  /** 直前の編集からの差分。指定すると増加を赤・減少を緑で表示する */
+  diff?: CostDiff | null
 }
 
 function formatYen(amount: number): string {
@@ -31,6 +38,7 @@ export function CostBreakdownPanel({
   people,
   compact = false,
   sources,
+  diff,
 }: CostBreakdownPanelProps) {
   const total = breakdown.fuel + breakdown.toll + breakdown.parking + breakdown.admission
   const sourceInfo = sources ? describeCostSources(sources) : null
@@ -58,7 +66,7 @@ export function CostBreakdownPanel({
           const source = sourceInfo?.[item.key]
           return (
             <li key={item.label} className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
+              <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
                 {item.label}
                 {!compact && source && (
                   <span
@@ -68,7 +76,14 @@ export function CostBreakdownPanel({
                   </span>
                 )}
               </span>
-              <span>{formatYen(item.value)}</span>
+              <span className="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
+                {diff != null && diff[item.key] !== 0 && (
+                  <span className={`text-xs font-medium ${deltaTextClass(diff[item.key])}`}>
+                    {formatYenDelta(diff[item.key])}
+                  </span>
+                )}
+                {formatYen(item.value)}
+              </span>
             </li>
           )
         })}
@@ -76,6 +91,11 @@ export function CostBreakdownPanel({
       {!compact && (
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           1人あたり約 {formatYen(Math.ceil(total / people))}
+          {diff != null && diff.per_person !== 0 && (
+            <span className={`ml-2 text-xs font-medium ${deltaTextClass(diff.per_person)}`}>
+              {formatYenDelta(diff.per_person)}
+            </span>
+          )}
         </p>
       )}
     </div>

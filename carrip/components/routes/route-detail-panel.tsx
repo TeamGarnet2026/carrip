@@ -14,6 +14,11 @@ import {
   type RoundTripLeg,
 } from '@/lib/maps/round-trip-display'
 import { driverChangeBadgeLabel } from '@/lib/poi/stop-labels'
+import {
+  deltaTextClass,
+  formatYenDelta,
+  type CostDiff,
+} from '@/lib/routes/cost-diff'
 import type { RouteCandidate, RouteStop } from '@/lib/routes/types'
 
 type RouteDetailPanelProps = {
@@ -26,6 +31,8 @@ type RouteDetailPanelProps = {
   addableStops?: RouteStop[]
   onStopsChange?: (stops: RouteStop[], needsRouteRecalc: boolean) => void
   showIndexLabel?: boolean
+  /** 直前の編集からの費用差分 */
+  costDiff?: CostDiff | null
 }
 
 function formatYen(amount: number): string {
@@ -42,6 +49,7 @@ export function RouteDetailPanel({
   addableStops = [],
   onStopsChange,
   showIndexLabel = true,
+  costDiff = null,
 }: RouteDetailPanelProps) {
   const [showAddList, setShowAddList] = useState(false)
 
@@ -128,6 +136,7 @@ export function RouteDetailPanel({
             breakdown={route.cost_breakdown}
             people={people}
             sources={route.cost_sources}
+            diff={costDiff}
           />
         </div>
         <div className="rounded bg-neutral-50 p-3 text-sm dark:bg-neutral-900">
@@ -142,8 +151,14 @@ export function RouteDetailPanel({
             ) : (
               <li>総時間: {formatRouteDuration(route)}</li>
             )}
-            <li>総費用: {formatYen(route.total_cost)}</li>
-            <li>1人あたり: {formatYen(route.cost_per_person)}</li>
+            <li>
+              総費用: {formatYen(route.total_cost)}
+              <CostDelta delta={costDiff?.total} />
+            </li>
+            <li>
+              1人あたり: {formatYen(route.cost_per_person)}
+              <CostDelta delta={costDiff?.per_person} />
+            </li>
             {route.departure_time && (
               <li>出発: {route.departure_time.replace('T', ' ').slice(0, 16)}</li>
             )}
@@ -362,6 +377,15 @@ export function RouteDetailPanel({
         </details>
       )}
     </div>
+  )
+}
+
+function CostDelta({ delta }: { delta?: number }) {
+  if (delta == null || delta === 0) return null
+  return (
+    <span className={`ml-2 text-xs font-medium ${deltaTextClass(delta)}`}>
+      {formatYenDelta(delta)}
+    </span>
   )
 }
 
