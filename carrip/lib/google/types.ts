@@ -26,14 +26,3 @@ export type RouteMetrics = {
   distanceKm: number
   durationMin: number
 }
-
-export type GeminiRoutePlan = {
-  id: string
-  title: string
-  summary: string
-  stop_place_ids: string[]
-}
-
-export type GeminiRoutePlansResponse = {
-  routes: GeminiRoutePlan[]
-}

@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { OpenInGoogleMapsLink } from '@/components/maps/open-in-google-maps-link'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
 import { loadPlanSession, savePlanSession } from '@/lib/plan/storage'
 import { toRouteGenerateRequest } from '@/lib/plan/types'
 

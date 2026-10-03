@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   buildDirectRouteSummary,
   buildDestinationRoutingStops,
-  isCostFocusedRoute,
   isDestinationRoutingStop,
   isDirectRoute,
   usesHighwayForRoute,
@@ -12,15 +11,18 @@ describe('cost-focused-plan', () => {
   it('identifies direct routes without tourist stops', () => {
     expect(isDirectRoute('route-1')).toBe(true)
     expect(isDirectRoute('route-2')).toBe(true)
-    expect(isDirectRoute('route-3')).toBe(false)
-    expect(isCostFocusedRoute('route-1')).toBe(true)
-    expect(isCostFocusedRoute('route-2')).toBe(false)
+    expect(isDirectRoute('route-custom')).toBe(false)
   })
 
-  it('uses highways except for the cost-focused route', () => {
-    expect(usesHighwayForRoute('route-1')).toBe(false)
-    expect(usesHighwayForRoute('route-2')).toBe(true)
-    expect(usesHighwayForRoute('route-3')).toBe(true)
+  it('fixes highway use for direct routes and follows the request otherwise', () => {
+    const noHighway = { options: { use_highway: false } }
+    const withHighway = { options: { use_highway: true } }
+
+    expect(usesHighwayForRoute('route-1', withHighway)).toBe(false)
+    expect(usesHighwayForRoute('route-2', noHighway)).toBe(true)
+    expect(usesHighwayForRoute('route-custom', noHighway)).toBe(false)
+    expect(usesHighwayForRoute('route-custom', withHighway)).toBe(true)
+    expect(usesHighwayForRoute('route-custom')).toBe(true)
   })
 
   it('builds destination routing stops from prefecture centers', () => {

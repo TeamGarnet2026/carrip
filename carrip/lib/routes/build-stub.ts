@@ -1,10 +1,19 @@
+import {
+  BALANCED_ROUTE_ID,
+  COST_FOCUSED_ROUTE_ID,
+  CUSTOM_ROUTE_ID,
+} from '@/lib/routes/cost-focused-plan'
 import type {
   RouteGenerateRequest,
   RouteSearchResult,
   RouteStop,
 } from '@/lib/routes/types'
 
-const ROUTE_TITLES = ['コスト重視ルート', 'バランスタイプ', '景観重視ルート']
+const ROUTE_VARIANTS = [
+  { id: CUSTOM_ROUTE_ID, title: 'あなたのルート' },
+  { id: COST_FOCUSED_ROUTE_ID, title: 'コスト重視（一般道で直行）' },
+  { id: BALANCED_ROUTE_ID, title: 'バランス型（高速で直行）' },
+] as const
 
 const SAMPLE_STOPS: RouteStop[] = [
   {
@@ -48,18 +57,36 @@ const SAMPLE_STOPS: RouteStop[] = [
   },
 ]
 
-/** 外部 API 連携前の仮ルート生成（テスト用） */
-export function generateRouteSearchStub(
+function withStubCosts(stop: RouteStop, index: number): RouteStop {
+  const sample = SAMPLE_STOPS[index % SAMPLE_STOPS.length]
+  return {
+    ...stop,
+    is_rest_stop: stop.is_rest_stop ?? false,
+    stay_minutes: stop.stay_minutes ?? sample.stay_minutes,
+    parking_yen: stop.parking_yen ?? sample.parking_yen,
+    parking_source: stop.parking_source ?? 'category_default',
+    admission_yen_per_person:
+      stop.admission_yen_per_person ?? sample.admission_yen_per_person,
+  }
+}
+
+/** 外部 API を使わない仮ルート作成（テスト用）。選んだ行き先がなければサンプル地点を使う */
+export function buildRoutesStub(input: {
   request: RouteGenerateRequest
-): RouteSearchResult {
+  stops?: RouteStop[]
+}): RouteSearchResult {
+  const { request } = input
+  const customStops =
+    input.stops && input.stops.length > 0
+      ? input.stops.map(withStubCosts)
+      : SAMPLE_STOPS
+
   return {
     generated_at: new Date().toISOString(),
-    routes: ROUTE_TITLES.map((title, index) => {
-      const factor = [0.85, 1.0, 1.15][index]
-      const directRoute = index === 0 || index === 1
-      const stops = directRoute
-        ? []
-        : SAMPLE_STOPS.slice(0, index + 2 > 3 ? 3 : index + 2)
+    routes: ROUTE_VARIANTS.map(({ id, title }, index) => {
+      const factor = [1.15, 0.85, 1.0][index]
+      const directRoute = id !== CUSTOM_ROUTE_ID
+      const stops = directRoute ? [] : customStops
       const toll = Math.round(12000 * request.days * factor * 0.25)
       // 直行プランも走行距離は発生するため、観光地なしでも燃料費は計算する
       const fuel = Math.round(12000 * request.days * factor * 0.35)
@@ -86,7 +113,7 @@ export function generateRouteSearchStub(
           : stopPoints
 
       return {
-        id: `route-${index + 1}`,
+        id,
         title,
         summary: directRoute
           ? `${request.prefecture.join('、')} まで直行（スタブ）`

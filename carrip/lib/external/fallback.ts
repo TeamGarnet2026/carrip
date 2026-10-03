@@ -52,7 +52,7 @@ export async function fetchNavitimeCarRouteWithFallback(input: {
     }))
 
     const metrics = await computeRouteMetrics(input.request.origin, poiStops, {
-      useHighway: usesHighwayForRoute(input.routeId),
+      useHighway: usesHighwayForRoute(input.routeId, input.request),
       originLatLng: input.origin,
       roundTrip: input.request.options?.round_trip === true,
     })
@@ -112,12 +112,4 @@ export async function resolveParkingFeeDetailsWithFallback(
     console.warn('Parking fee lookup failed, using fallback estimate:', error)
     return estimateParkingDetails(stops)
   }
-}
-
-export async function resolveParkingFeesWithFallback(
-  stops: ParkingFallbackStop[],
-  degraded: boolean
-): Promise<number> {
-  const fees = await resolveParkingFeeDetailsWithFallback(stops, degraded)
-  return fees.reduce((total, fee) => total + fee.total_yen, 0)
 }

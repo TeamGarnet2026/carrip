@@ -1,26 +1,60 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
-  detectLongDriveSegmentIndexes,
+  insertDriverChangeStops,
   interpolatePointOnLeg,
   parseDriveLegDurations,
   planDriverChangeInsertions,
 } from '@/lib/poi/rest-area'
+import * as poiSearch from '@/lib/poi/search'
 import type { RouteSection } from '@/lib/routes/types'
+
+describe('insertDriverChangeStops', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('does not insert both carriageways of the same service area', async () => {
+    const origin = { lat: 35.0, lng: 136.5 }
+    const destination = {
+      id: 'dest',
+      name: '目的地',
+      address: '目的地',
+      lat: 35.0,
+      lng: 135.5,
+      category: 'tourist',
+    }
+    const upSide = {
+      id: 'sa-up',
+      name: '養老SA (上り)',
+      address: '岐阜県',
+      lat: 35.3,
+      lng: 136.55,
+    }
+    const downSide = { ...upSide, id: 'sa-down', name: '養老SA (下り)', lng: 136.551 }
+
+    vi.spyOn(poiSearch, 'searchPlacesByText')
+      .mockResolvedValueOnce([upSide])
+      .mockResolvedValueOnce([downSide])
+
+    const result = await insertDriverChangeStops(
+      [destination],
+      [
+        { type: 'move', name: '高速', duration_min: 200 },
+        { type: 'point', name: '目的地' },
+      ],
+      90,
+      true,
+      origin
+    )
+
+    expect(result.map((stop) => stop.id)).toEqual(['sa-up', 'dest'])
+  })
+})
 
 describe('rest-area driver change planning', () => {
   const origin = { lat: 35.0116, lng: 135.7681 }
   const stopA = { lat: 34.9949, lng: 135.785 }
   const stopB = { lat: 34.985, lng: 135.79 }
-
-  it('finds move segments longer than max drive minutes', () => {
-    const sections: RouteSection[] = [
-      { type: 'move', name: '走行1', duration_min: 80 },
-      { type: 'point', name: 'POI', duration_min: 30 },
-      { type: 'move', name: '走行2', duration_min: 140 },
-    ]
-
-    expect(detectLongDriveSegmentIndexes(sections, 120)).toEqual([2])
-  })
 
   it('parses leg durations from move/point sections', () => {
     const sections: RouteSection[] = [

@@ -41,7 +41,7 @@ export function getCacheBackend(): CacheBackend | null {
 }
 
 export async function buildRouteCacheKey(
-  request: RouteGenerateRequest
+  request: RouteGenerateRequest | Record<string, unknown>
 ): Promise<string> {
   const hash = await sha256Hex(stableStringify(request))
   return `${ROUTE_CACHE_KEY_PREFIX}${hash}`
@@ -56,7 +56,12 @@ export async function getCachedRouteSearch(
 ): Promise<RouteSearchResult | null> {
   const backend = getCacheBackend()
   if (backend === 'redis') {
-    return getRedis().get<RouteSearchResult>(cacheKey)
+    try {
+      return await getRedis().get<RouteSearchResult>(cacheKey)
+    } catch (error) {
+      console.warn('Route cache read failed, generating without cache:', error)
+      return null
+    }
   }
   if (backend === 'memory') {
     return getMemoryCachedRouteSearch(cacheKey)
@@ -71,7 +76,11 @@ export async function setCachedRouteSearch(
 ): Promise<void> {
   const backend = getCacheBackend()
   if (backend === 'redis') {
-    await getRedis().set(cacheKey, result, { ex: ttlSeconds })
+    try {
+      await getRedis().set(cacheKey, result, { ex: ttlSeconds })
+    } catch (error) {
+      console.warn('Route cache write failed:', error)
+    }
     return
   }
   if (backend === 'memory') {

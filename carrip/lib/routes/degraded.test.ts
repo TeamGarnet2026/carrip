@@ -10,9 +10,9 @@ describe('degraded reasons', () => {
       collectDegradedReasons(
         'government_fuel',
         ['navitime', 'government_fuel'],
-        'gemini'
+        'google_routes'
       )
-    ).toEqual(['government_fuel', 'navitime', 'gemini'])
+    ).toEqual(['government_fuel', 'navitime', 'google_routes'])
   })
 
   it('returns user-facing banner messages', () => {

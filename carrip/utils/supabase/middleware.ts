@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getUserWithTimeout } from '@/utils/supabase/get-user'
 
 function isProtectedPath(pathname: string): boolean {
   if (pathname === '/trips' || pathname.startsWith('/trips/')) {
@@ -27,6 +28,13 @@ function hasSupabaseAuthCookie(request: NextRequest): boolean {
     )
 }
 
+function isPrefetchRequest(request: NextRequest): boolean {
+  return (
+    request.headers.has('next-router-prefetch') ||
+    request.headers.get('purpose') === 'prefetch'
+  )
+}
+
 function safeRedirectPath(path: string | null): string {
   if (path && path.startsWith('/') && !path.startsWith('//')) {
     return path
@@ -37,11 +45,10 @@ function safeRedirectPath(path: string | null): string {
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
   const needsAuthCheck =
-    isProtectedPath(pathname) ||
-    isAuthPage(pathname) ||
-    hasSupabaseAuthCookie(request)
+    (isProtectedPath(pathname) || isAuthPage(pathname)) &&
+    !isPrefetchRequest(request)
 
-  // 公開ページかつ未ログイン時は Supabase 往復をスキップして体感速度を上げる
+  // 公開ページでは Supabase 往復をしない（セッション更新は保護ページ・API 側で行われる）
   if (!needsAuthCheck) {
     return NextResponse.next({ request })
   }
@@ -81,7 +88,7 @@ export async function updateSession(request: NextRequest) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await getUserWithTimeout(supabase)
 
   if (!user && isProtectedPath(pathname)) {
     const loginUrl = request.nextUrl.clone()

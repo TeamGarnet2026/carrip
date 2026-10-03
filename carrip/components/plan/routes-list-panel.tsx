@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { DegradedBanner } from '@/components/routes/degraded-banner'
 import { RouteDetailPanel } from '@/components/routes/route-detail-panel'
 import { RouteCard } from '@/components/route/route-card'
@@ -52,26 +52,15 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
   const [recalculating, setRecalculating] = useState(false)
   const [costDelta, setCostDelta] = useState<number | null>(null)
 
-  useEffect(() => {
-    const session = loadPlanSession(planId)
-    if (!session) {
-      setSessionMissing(true)
-      return
-    }
-
-    setOriginLabel(session.form.origin)
-
-    if (session.routes) {
-      setResult(session.routes)
-      setSelectedRouteId(session.selectedRouteId ?? session.routes.routes[0]?.id ?? null)
-    }
-  }, [planId])
-
   const generateRoutes = useCallback(
     async (mode: GenerateMode) => {
       const session = loadPlanSession(planId)
       if (!session) {
         setSessionMissing(true)
+        return
+      }
+      if (!session.spots?.length) {
+        router.replace(`/plan/${planId}/spots`)
         return
       }
 
@@ -81,17 +70,20 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
 
       try {
         const controller = new AbortController()
-        const timeout = window.setTimeout(() => controller.abort(), 30000)
+        // 運転交代地点の挿入で経路を取り直すことがあるため長めに待つ
+        const timeout = window.setTimeout(() => controller.abort(), 60000)
 
         const endpoint =
-          mode === 'stub'
-            ? '/api/routes/generate?mode=stub'
-            : '/api/routes/generate'
+          mode === 'stub' ? '/api/routes/build?mode=stub' : '/api/routes/build'
 
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(toRouteGenerateRequest(session.form)),
+          body: JSON.stringify({
+            request: toRouteGenerateRequest(session.form),
+            stops: session.spots,
+            order_mode: session.orderMode ?? 'auto',
+          }),
           signal: controller.signal,
         })
 
@@ -99,7 +91,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
         const data = await response.json()
 
         if (!response.ok) {
-          setError(data.error ?? 'ルートの生成に失敗しました')
+          setError(data.error ?? 'ルートの計算に失敗しました')
           return
         }
 
@@ -125,6 +117,29 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
     },
     [planId, router]
   )
+
+  // 開発時の Strict Mode で effect が2回走っても、外部 API を二重に呼ばない
+  const autoStarted = useRef(false)
+
+  useEffect(() => {
+    const session = loadPlanSession(planId)
+    if (!session) {
+      setSessionMissing(true)
+      return
+    }
+
+    setOriginLabel(session.form.origin)
+
+    if (session.routes) {
+      setResult(session.routes)
+      setSelectedRouteId(session.selectedRouteId ?? session.routes.routes[0]?.id ?? null)
+      return
+    }
+
+    if (autoStarted.current) return
+    autoStarted.current = true
+    void generateRoutes('live')
+  }, [planId, generateRoutes])
 
   const sortedRoutes = useMemo(() => {
     if (!result) return []
@@ -250,22 +265,15 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
     [planId, selectedRouteId, result, applyRouteUpdate]
   )
 
+  // 行き先選択で選んだ場所のうち、表示中のルートに含まれていないものを追加候補にする
   const addableStops = useMemo(() => {
     if (!result || !selectedRouteId) return []
-    const seen = new Set<string>()
-    const candidates: RouteStop[] = []
-
-    for (const route of result.routes) {
-      if (route.id === selectedRouteId) continue
-      for (const stop of route.stops) {
-        if (stop.is_rest_stop) continue
-        if (seen.has(stop.place_id)) continue
-        seen.add(stop.place_id)
-        candidates.push(stop)
-      }
-    }
-    return candidates
-  }, [result, selectedRouteId])
+    const route = result.routes.find((r) => r.id === selectedRouteId)
+    const inRoute = new Set(route?.stops.map((stop) => stop.place_id))
+    return (loadPlanSession(planId)?.spots ?? []).filter(
+      (stop) => !inRoute.has(stop.place_id)
+    )
+  }, [planId, result, selectedRouteId])
 
   if (sessionMissing) {
     return (
@@ -280,57 +288,35 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
     )
   }
 
-  if (loading) {
+  if (loading || (!result && !error)) {
     return (
       <div className="flex flex-col items-center gap-6 py-16">
-        <Spinner size="lg" label="ルートを生成中" />
+        <Spinner size="lg" label="ルートを計算中" />
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           {generatingMode === 'stub'
-            ? 'スタブデータを準備しています…'
-            : '外部APIで候補ルートを生成しています（最大30秒）'}
+            ? 'サンプルデータを準備しています…'
+            : '選んだ行き先を回るルートと料金を計算しています（最大60秒）'}
         </p>
         {generatingMode === 'live' && <GenerationProgress />}
       </div>
     )
   }
 
-  if (error) {
+  if (error || !result) {
     return (
       <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/40">
         <p className="font-medium text-red-800 dark:text-red-200">{error}</p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Link href="/plan/new?step=4">
-            <Button variant="secondary">条件を変更する</Button>
+          <Button onClick={() => void generateRoutes('live')}>もう一度計算する</Button>
+          <Link href={`/plan/${planId}/spots`}>
+            <Button variant="secondary">行き先を変更する</Button>
           </Link>
-          <Button onClick={() => void generateRoutes('stub')}>スタブで表示</Button>
-          <Button variant="secondary" onClick={() => void generateRoutes('live')}>
-            APIで再試行
-          </Button>
+          {process.env.NODE_ENV !== 'production' && (
+            <Button variant="ghost" onClick={() => void generateRoutes('stub')}>
+              サンプルで表示（開発用）
+            </Button>
+          )}
         </div>
-      </div>
-    )
-  }
-
-  if (!result) {
-    return (
-      <div className="rounded-xl border border-dashed border-neutral-300 p-8 dark:border-neutral-700">
-        <h2 className="text-lg font-semibold">ルート候補を生成</h2>
-        <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-          APIを毎回すべて呼び出すと利用制限に達しやすいため、必要な方法を選んでください。
-        </p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <Button onClick={() => void generateRoutes('stub')}>スタブで表示</Button>
-          <Button variant="secondary" onClick={() => void generateRoutes('live')}>
-            APIで生成（フル）
-          </Button>
-        </div>
-        <p className="mt-4 text-xs text-neutral-500">
-          個別ステップのテストは{' '}
-          <Link href="/test-api" className="underline">
-            /test-api
-          </Link>{' '}
-          から実行できます。
-        </p>
       </div>
     )
   }
@@ -338,9 +324,9 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
   if (sortedRoutes.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-neutral-300 p-6 text-sm dark:border-neutral-700">
-        条件に合うルートが見つかりませんでした。
-        <Link href="/plan/new?step=3" className="ml-2 underline">
-          条件を変更する
+        ルートが見つかりませんでした。
+        <Link href={`/plan/${planId}/spots`} className="ml-2 underline">
+          行き先を変更する
         </Link>
       </div>
     )
@@ -366,18 +352,16 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          {sortedRoutes.length}案 · {originLabel} 出発
+          {sortedRoutes.length}ルート · {originLabel} 出発
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => void generateRoutes('stub')}
-          >
-            スタブ再生成
-          </Button>
+          <Link href={`/plan/${planId}/spots`}>
+            <Button variant="secondary" size="sm">
+              行き先を変更
+            </Button>
+          </Link>
           <Button size="sm" onClick={() => void generateRoutes('live')}>
-            APIで再生成
+            再計算
           </Button>
         </div>
       </div>
@@ -408,6 +392,8 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
             people={people}
             isSelected={route.id === selectedRouteId}
             onClick={() => handleSelectRoute(route.id)}
+            showIndexLabel={false}
+            showRecommendBadge={false}
           />
         ))}
       </div>
@@ -448,6 +434,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
           recalculating={recalculating}
           addableStops={addableStops}
           onStopsChange={handleStopsChange}
+          showIndexLabel={false}
         />
       )}
 

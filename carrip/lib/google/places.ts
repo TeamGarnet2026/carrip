@@ -103,30 +103,6 @@ export async function searchTouristSpots(
   return filterQualityPlaces(places)
 }
 
-export async function searchTouristSpotsForPrefectures(
-  prefectures: string[],
-  preferences: string[] = []
-): Promise<PoiPlace[]> {
-  const results = await Promise.all(
-    prefectures.map((prefecture) =>
-      searchTouristSpots(prefecture, preferences)
-    )
-  )
-
-  const seen = new Set<string>()
-  const merged: PoiPlace[] = []
-
-  for (const places of results) {
-    for (const place of places) {
-      if (seen.has(place.id)) continue
-      seen.add(place.id)
-      merged.push(place)
-    }
-  }
-
-  return merged.slice(0, 20)
-}
-
 export async function geocodeAddress(
   address: string
 ): Promise<{ lat: number; lng: number } | null> {

@@ -6,7 +6,3 @@
 export function getGoogleMapsApiKey(): string {
   return process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? ''
 }
-
-export function isGoogleMapsConfigured(): boolean {
-  return getGoogleMapsApiKey().length > 0
-}

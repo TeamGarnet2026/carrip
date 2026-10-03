@@ -140,8 +140,3 @@ export const PREFECTURE_META: Record<string, PrefectureMeta> = {
 export function regionForPrefecture(prefecture: string): RegionId | undefined {
   return PREFECTURE_META[prefecture]?.region
 }
-
-export function prefecturesInRegion(regionId: RegionId | null): string[] {
-  if (!regionId) return Object.keys(PREFECTURE_META)
-  return REGIONS.find((region) => region.id === regionId)?.prefectures ?? []
-}

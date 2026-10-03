@@ -76,8 +76,8 @@ export const PLAN_STEPS = [
 ] as const
 
 export const GENERATION_STEPS = [
-  'POI検索中',
+  '回る順番を決定中',
   'ルート計算中',
+  '運転交代地点を確認中',
   '費用計算中',
-  'AIコメント生成中',
 ] as const

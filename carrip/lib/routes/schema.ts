@@ -61,10 +61,22 @@ export const routeStopEditSchema = z.object({
   admission_yen_per_person: z.number().int().min(0).max(100000).optional(),
 })
 
+/** 行き先として選べる上限（運転交代地点は別枠で自動挿入される） */
+export const MAX_SELECTED_SPOTS = 10
+
+export const routeBuildSchema = z.object({
+  request: routeGenerateSchema,
+  stops: z.array(routeStopEditSchema).min(1).max(MAX_SELECTED_SPOTS),
+  order_mode: z.enum(['auto', 'manual']),
+})
+
+export type RouteBuildInput = z.infer<typeof routeBuildSchema>
+
 export const routeRecalculateSchema = z.object({
   request: routeGenerateSchema,
   route_id: z.string().min(1),
-  stops: z.array(routeStopEditSchema).min(1).max(15),
+  // 選んだ行き先に、自動挿入された運転交代地点が加わる
+  stops: z.array(routeStopEditSchema).min(1).max(25),
 })
 
 export type RouteRecalculateInput = z.infer<typeof routeRecalculateSchema>

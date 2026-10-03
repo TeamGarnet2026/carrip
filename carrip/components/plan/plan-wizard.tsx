@@ -110,7 +110,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
 
     const planId = createPlanId()
     savePlanSession({ id: planId, form })
-    router.push(`/plan/generating?id=${planId}`)
+    router.push(`/plan/${planId}/spots`)
   }
 
   function handleGps() {
@@ -224,6 +224,21 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
             />
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
+                高速道路を使う
+                <input
+                  type="checkbox"
+                  checked={form.options.useHighway}
+                  onChange={(e) =>
+                    updateForm({
+                      options: {
+                        ...form.options,
+                        useHighway: e.target.checked,
+                      },
+                    })
+                  }
+                />
+              </label>
+              <label className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
                 ETCカードあり
                 <input
                   type="checkbox"
@@ -314,7 +329,9 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
               {form.options.maxDriveMin === 0
                 ? '運転交代地点は提案しません。'
                 : '上限を超える前に運転交代地点を提案します（高速利用時は SA/PA、一般道はコンビニ）。'}
-              上限を超える前に運転交代地点を提案します（コスト重視は一般道・コンビニ、他ルートは高速・SA/PA）。
+            </p>
+            <p className="text-xs text-neutral-500">
+              「高速道路を使う」は、次の画面で選ぶ行き先を回るルートに反映されます。比較用に、一般道で直行するルートと高速で直行するルートも表示します。
             </p>
           </>
         )}
@@ -379,6 +396,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   : 'なし'}
               </p>
               <p className="text-neutral-600 dark:text-neutral-400">
+                高速道路: {form.options.useHighway ? '使う' : '使わない'} ·
                 ETC: {form.options.etcCard ? 'あり' : 'なし'} · 出発{' '}
                 {form.options.departureTime} ·{' '}
                 {form.options.roundTrip ? '往復（出発地に戻る）' : '片道'}
@@ -412,7 +430,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
             次へ
           </Button>
         ) : (
-          <Button onClick={handleSubmit}>ルートを生成する</Button>
+          <Button onClick={handleSubmit}>行き先を選ぶ</Button>
         )}
       </div>
     </div>

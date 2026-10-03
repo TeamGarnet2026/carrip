@@ -285,10 +285,6 @@ export function ApiTestPanel({ isLoggedIn, userEmail }: ApiTestPanelProps) {
               未ログイン —{' '}
               <Link href="/login?redirectTo=/test-api" className="underline">
                 ログイン
-              </Link>{' '}
-              または{' '}
-              <Link href="/test-auth" className="underline">
-                /test-auth
               </Link>
             </>
           )}

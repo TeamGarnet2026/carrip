@@ -24,7 +24,12 @@ export async function getCachedPoiSearch(
   cacheKey: string
 ): Promise<PoiPlace[] | null> {
   if (isRedisConfigured()) {
-    return getRedis().get<PoiPlace[]>(cacheKey)
+    try {
+      return await getRedis().get<PoiPlace[]>(cacheKey)
+    } catch (error) {
+      console.warn('POI cache read failed:', error)
+      return null
+    }
   }
 
   const entry = memoryCache.get(cacheKey)
@@ -41,7 +46,11 @@ export async function setCachedPoiSearch(
   places: PoiPlace[]
 ): Promise<void> {
   if (isRedisConfigured()) {
-    await getRedis().set(cacheKey, places, { ex: ROUTE_CACHE_TTL_SECONDS })
+    try {
+      await getRedis().set(cacheKey, places, { ex: ROUTE_CACHE_TTL_SECONDS })
+    } catch (error) {
+      console.warn('POI cache write failed:', error)
+    }
     return
   }
 

@@ -22,7 +22,3 @@ export function driverChangeBadgeLabel(
   if (isRestStop) return '運転交代'
   return null
 }
-
-export function isDriverChangeStopCategory(category?: string | null): boolean {
-  return stopCategoryLabel(category) != null
-}

@@ -20,6 +20,8 @@ const DRIVER_CHANGE_CATEGORIES = new Set<string>([
   'convenience_store',
 ])
 
+const DUPLICATE_REST_STOP_RADIUS_KM = 2
+
 export type DriverChangeInsertion = {
   legIndex: number
   fraction: number
@@ -34,23 +36,6 @@ export function isDriverChangeCategory(
 
 export function isTouristStop(stop: PoiPlace): boolean {
   return !isDriverChangeCategory(stop.category)
-}
-
-/** @deprecated planDriverChangeInsertions を使用 */
-export function detectLongDriveSegmentIndexes(
-  sections: RouteSection[],
-  maxDriveMin: number
-): number[] {
-  const indexes: number[] = []
-
-  sections.forEach((section, index) => {
-    if (section.type !== 'move') return
-    if ((section.duration_min ?? 0) > maxDriveMin) {
-      indexes.push(index)
-    }
-  })
-
-  return indexes
 }
 
 export function parseDriveLegDurations(
@@ -292,7 +277,13 @@ export async function insertDriverChangeStops(
     )
     if (!restStop) continue
 
-    const duplicate = result.some((stop) => stop.id === restStop.id)
+    // 上り・下りの同名SAは別IDだが数百m以内に並ぶため、距離でも重複を判定する
+    const duplicate = result.some(
+      (stop) =>
+        stop.id === restStop.id ||
+        haversineKm(stop.lat, stop.lng, restStop.lat, restStop.lng) <
+          DUPLICATE_REST_STOP_RADIUS_KM
+    )
     if (duplicate) continue
 
     result.splice(plan.insertIndex, 0, restStop)
@@ -300,25 +291,3 @@ export async function insertDriverChangeStops(
 
   return result
 }
-
-/** @deprecated insertDriverChangeStops を使用 */
-export async function insertRestAreasIntoStops(
-  stops: PoiPlace[],
-  sections: RouteSection[],
-  maxDriveMin: number
-): Promise<PoiPlace[]> {
-  if (stops.length === 0) {
-    return insertDriverChangeStops(
-      stops,
-      sections,
-      maxDriveMin,
-      true,
-      { lat: 0, lng: 0 }
-    )
-  }
-
-  const origin = { lat: stops[0].lat, lng: stops[0].lng }
-  return insertDriverChangeStops(stops, sections, maxDriveMin, true, origin)
-}
-
-export type RestAreaStop = DriverChangeStop

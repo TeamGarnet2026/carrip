@@ -1,3 +1,4 @@
+import { getUserWithTimeout } from '@/utils/supabase/get-user'
 import { createClient } from '@/utils/supabase/server'
 import { NextResponse } from 'next/server'
 
@@ -6,7 +7,7 @@ export async function requireAuthUser() {
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser()
+  } = await getUserWithTimeout(supabase)
 
   if (error || !user) {
     return {

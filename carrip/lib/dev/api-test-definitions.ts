@@ -65,6 +65,33 @@ const SAMPLE_TOURIST_STOPS = [
   },
 ]
 
+const SAMPLE_ROUTE_BUILD_INPUT = {
+  request: SAMPLE_ROUTE_GENERATE_REQUEST,
+  stops: [
+    {
+      place_id: 'ChIJB_vchdMIAWARujTEUIZlr2I',
+      name: '清水寺',
+      address: '京都府京都市東山区清水1丁目294',
+      lat: 34.9949,
+      lng: 135.785,
+      category: 'tourist',
+    },
+    {
+      place_id: 'sample-kinkakuji',
+      name: '金閣寺',
+      address: '京都府京都市北区金閣寺町1',
+      lat: 35.0394,
+      lng: 135.7292,
+      category: 'tourist',
+      // place_id がサンプルのため、Places 詳細取得を避けて料金を指定しておく
+      parking_yen: 500,
+      parking_source: 'manual',
+      admission_yen_per_person: 500,
+    },
+  ],
+  order_mode: 'auto',
+}
+
 async function fetchJson(
   input: string,
   init?: RequestInit
@@ -128,39 +155,6 @@ export const API_TEST_DEFINITIONS: ApiTestDefinition[] = [
     method: 'GET',
     endpoint: '/api/health/google-maps',
     run: async () => fetchJson('/api/health/google-maps'),
-  },
-  {
-    id: 'health-gemini',
-    label: 'Gemini API キー疎通チェック',
-    description:
-      'GEMINI_API_KEY が有効か最小リクエストで確認（429 クォータ超過もここで判別）',
-    category: 'health',
-    method: 'GET',
-    endpoint: '/api/health/gemini',
-    run: async () => {
-      const result = await fetchJson('/api/health/gemini')
-      const data = result.data as {
-        ok?: boolean
-        reason?: string
-        message?: string
-        fix_steps?: string[]
-      }
-
-      if (data.reason === 'quota_exceeded') {
-        return {
-          warning: true,
-          reason: data.message,
-          fix_steps: data.fix_steps,
-          ...data,
-        }
-      }
-
-      if (data.ok === false) {
-        throw new Error(data.message ?? 'Gemini API は利用できません')
-      }
-
-      return result
-    },
   },
   {
     id: 'health-redis',
@@ -243,22 +237,6 @@ export const API_TEST_DEFINITIONS: ApiTestDefinition[] = [
           prefecture: ['京都府'],
           preferences: ['scenic'],
         }),
-      }),
-  },
-  {
-    id: 'dev-gemini-plan',
-    label: 'Gemini ルート案生成',
-    description:
-      '目的地周辺 POI から Gemini で3案生成（Places + Gemini API）',
-    category: 'route-step',
-    method: 'POST',
-    endpoint: '/api/dev/gemini-plan',
-    heavy: true,
-    run: async () =>
-      fetchJson('/api/dev/gemini-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(SAMPLE_ROUTE_GENERATE_REQUEST),
       }),
   },
   {
@@ -374,36 +352,37 @@ export const API_TEST_DEFINITIONS: ApiTestDefinition[] = [
       }),
   },
   {
-    id: 'routes-generate-stub',
-    label: 'ルート生成（スタブ）',
-    description: '外部 API を使わずダミー3案を返す（API 消費なし）',
+    id: 'routes-build-stub',
+    label: 'ルート作成（スタブ）',
+    description:
+      '選んだ行き先のルート＋直行2ルートを外部 API なしで返す（API 消費なし）',
     category: 'route',
     method: 'POST',
-    endpoint: '/api/routes/generate?mode=stub',
+    endpoint: '/api/routes/build?mode=stub',
     run: async (context) => {
-      const result = await fetchJson('/api/routes/generate?mode=stub', {
+      const result = await fetchJson('/api/routes/build?mode=stub', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(SAMPLE_ROUTE_GENERATE_REQUEST),
+        body: JSON.stringify(SAMPLE_ROUTE_BUILD_INPUT),
       })
       context.setLastGeneratedRoute(result.data)
       return result
     },
   },
   {
-    id: 'routes-generate',
-    label: 'ルート生成（フル）',
+    id: 'routes-build',
+    label: 'ルート作成（フル）',
     description:
-      'Places + Gemini + NAVITIME + 駐車料 + 入場料。API 消費が大きいので単体実行推奨',
+      'NAVITIME 3ルート + 運転交代地点 + 駐車料 + 入場料。API 消費が大きいので単体実行推奨',
     category: 'route',
     method: 'POST',
-    endpoint: '/api/routes/generate',
+    endpoint: '/api/routes/build',
     heavy: true,
     run: async (context) => {
-      const result = await fetchJson('/api/routes/generate', {
+      const result = await fetchJson('/api/routes/build', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(SAMPLE_ROUTE_GENERATE_REQUEST),
+        body: JSON.stringify(SAMPLE_ROUTE_BUILD_INPUT),
       })
       context.setLastGeneratedRoute(result.data)
       return result
