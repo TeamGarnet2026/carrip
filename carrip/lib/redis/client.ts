@@ -19,6 +19,8 @@ export function getRedis(): Redis {
     redis = new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL!,
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+      // キャッシュ用途なので、障害時は長く再試行せず早めに諦めて本処理を続ける
+      retry: { retries: 1, backoff: () => 200 },
     })
   }
 

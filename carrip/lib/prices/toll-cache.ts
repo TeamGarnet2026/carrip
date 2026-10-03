@@ -12,7 +12,12 @@ export async function getCachedTollPrice(
   cacheKey: string
 ): Promise<TollPriceResult | null> {
   if (isRedisConfigured()) {
-    return getRedis().get<TollPriceResult>(cacheKey)
+    try {
+      return await getRedis().get<TollPriceResult>(cacheKey)
+    } catch (error) {
+      console.warn('Toll cache read failed:', error)
+      return null
+    }
   }
 
   const entry = memoryCache.get(cacheKey)
@@ -29,7 +34,11 @@ export async function setCachedTollPrice(
   value: TollPriceResult
 ): Promise<void> {
   if (isRedisConfigured()) {
-    await getRedis().set(cacheKey, value, { ex: TOLL_CACHE_TTL_SECONDS })
+    try {
+      await getRedis().set(cacheKey, value, { ex: TOLL_CACHE_TTL_SECONDS })
+    } catch (error) {
+      console.warn('Toll cache write failed:', error)
+    }
     return
   }
 
