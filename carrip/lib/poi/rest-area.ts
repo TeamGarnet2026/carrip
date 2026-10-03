@@ -1,3 +1,4 @@
+import { getCachedPoiSearch, setCachedPoiSearch } from '@/lib/cache/poi-cache'
 import type { PoiPlace } from '@/lib/google/types'
 import { haversineKm, type LatLng } from '@/lib/maps/route-corridor'
 import type { RouteSection } from '@/lib/routes/types'
@@ -247,16 +248,46 @@ function locateOnLeg(path: RoutePath, legIndex: number, place: LatLng) {
   return best
 }
 
+const inFlightNearbySearches = new Map<string, Promise<PoiPlace[]>>()
+
+/**
+ * Places Text Search は 1 日の上限が小さいため、約1km 四方のマス単位でキャッシュする。
+ * 3 本のルートを並列計算すると同じ地点を同時に探すことがあるので、実行中の検索も共有する。
+ */
+async function searchPlacesNear(
+  keyword: string,
+  point: LatLng,
+  radiusMeters: number
+): Promise<PoiPlace[]> {
+  const cacheKey = `poi:near:${keyword}:${point.lat.toFixed(2)},${point.lng.toFixed(2)}:${radiusMeters}`
+
+  const cached = await getCachedPoiSearch(cacheKey)
+  if (cached) return cached
+
+  const inFlight = inFlightNearbySearches.get(cacheKey)
+  if (inFlight) return inFlight
+
+  const request = searchPlacesByText(keyword, {
+    maxResultCount: 20,
+    skipQualityFilter: true,
+    locationBias: { lat: point.lat, lng: point.lng, radiusMeters },
+  })
+    .then(async (places) => {
+      await setCachedPoiSearch(cacheKey, places)
+      return places
+    })
+    .finally(() => inFlightNearbySearches.delete(cacheKey))
+
+  inFlightNearbySearches.set(cacheKey, request)
+  return request
+}
+
 async function searchHighwayRestCandidates(
   point: LatLng,
   preferParkingArea: boolean
 ): Promise<DriverChangeStop[]> {
   const keyword = preferParkingArea ? 'パーキングエリア PA' : 'サービスエリア SA'
-  const places = await searchPlacesByText(keyword, {
-    maxResultCount: 20,
-    skipQualityFilter: true,
-    locationBias: { lat: point.lat, lng: point.lng, radiusMeters: 40000 },
-  })
+  const places = await searchPlacesNear(keyword, point, 40000)
 
   const filtered = places.filter((place) =>
     preferParkingArea
@@ -273,11 +304,7 @@ async function searchHighwayRestCandidates(
 async function searchConvenienceStoreCandidates(
   point: LatLng
 ): Promise<DriverChangeStop[]> {
-  const places = await searchPlacesByText('コンビニ', {
-    maxResultCount: 20,
-    skipQualityFilter: true,
-    locationBias: { lat: point.lat, lng: point.lng, radiusMeters: 5000 },
-  })
+  const places = await searchPlacesNear('コンビニ', point, 5000)
 
   const filtered = places.filter((place) =>
     /コンビニ|ファミリーマート|ローソン|セブン|ミニストップ|デイリーヤマザキ/i.test(
