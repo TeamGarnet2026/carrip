@@ -132,17 +132,17 @@ export function RouteDetailPanel({
   )
 
   return (
-    <div className="rounded border border-neutral-200 p-4 dark:border-neutral-800">
+    <div className="rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-carrip)] sm:p-6">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <p className="font-medium">
+        <p className="m-0 text-lg font-bold text-ink">
           {showIndexLabel ? `案${index + 1}: ` : ''}
           {route.title}
         </p>
-        <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+        <span className="rounded-lg bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
           🚗 車移動のみ
         </span>
         {roundTrip && (
-          <span className="rounded bg-teal-100 px-2 py-0.5 text-xs text-teal-800 dark:bg-teal-950 dark:text-teal-200">
+          <span className="rounded-lg bg-teal-100 px-2 py-0.5 text-xs text-teal-800 dark:bg-teal-950 dark:text-teal-200">
             往復
           </span>
         )}
@@ -164,16 +164,16 @@ export function RouteDetailPanel({
       )}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded bg-neutral-50 p-3 text-sm dark:bg-neutral-900">
-          <p className="mb-2 font-medium">費用内訳</p>
+        <div className="rounded-xl bg-soft p-4 text-sm dark:bg-neutral-900">
+          <p className="mt-0 mb-3 text-[13px] font-bold text-muted">費用内訳</p>
           <CostBreakdownPanel
             breakdown={route.cost_breakdown}
             people={people}
             sources={route.cost_sources}
           />
         </div>
-        <div className="rounded bg-neutral-50 p-3 text-sm dark:bg-neutral-900">
-          <p className="mb-2 font-medium">走行概要</p>
+        <div className="rounded-xl bg-soft p-4 text-sm dark:bg-neutral-900">
+          <p className="mt-0 mb-3 text-[13px] font-bold text-muted">走行概要</p>
           <ul className="space-y-1 text-neutral-600 dark:text-neutral-400">
             <li>総距離: {route.total_distance_km} km</li>
             {legDurations ? (
@@ -199,7 +199,7 @@ export function RouteDetailPanel({
       {route.stops.length > 0 && (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-medium">立ち寄り地点</p>
+            <p className="m-0 text-[13px] font-bold text-muted">立ち寄り地点</p>
             {editable && availableToAdd.length > 0 && (
               <button
                 type="button"
@@ -213,7 +213,7 @@ export function RouteDetailPanel({
           </div>
 
           {showAddList && (
-            <ul className="mb-3 space-y-1 rounded border border-dashed border-neutral-300 p-2 text-sm dark:border-neutral-700">
+            <ul className="mb-3 space-y-1 rounded-lg border border-dashed border-neutral-300 p-2 text-sm dark:border-neutral-700">
               {availableToAdd.map((candidate) => (
                 <li
                   key={candidate.place_id}
@@ -226,7 +226,7 @@ export function RouteDetailPanel({
                     type="button"
                     disabled={!canEdit}
                     onClick={() => addStop(candidate)}
-                    className="rounded border border-teal-600 px-2 py-0.5 text-xs text-teal-700 disabled:opacity-50 dark:border-teal-400 dark:text-teal-400"
+                    className="rounded-lg border border-teal-600 px-2 py-0.5 text-xs text-teal-700 disabled:opacity-50 dark:border-teal-400 dark:text-teal-400"
                   >
                     追加
                   </button>
@@ -301,7 +301,7 @@ export function RouteDetailPanel({
                   <span>{stop.name}</span>
                   {roundTrip && stopLeg && (
                     <span
-                      className={`rounded px-1.5 py-0.5 text-xs ${
+                      className={`rounded-lg px-1.5 py-0.5 text-xs ${
                         stopLeg === 'return'
                           ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
                           : 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300'
@@ -311,7 +311,7 @@ export function RouteDetailPanel({
                     </span>
                   )}
                   {label && (
-                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                    <span className="rounded-lg bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
                       {label}
                     </span>
                   )}
@@ -335,7 +335,7 @@ export function RouteDetailPanel({
                             updateParking(stopIndex, value)
                           }
                         }}
-                        className="w-20 rounded border border-neutral-300 px-1.5 py-0.5 text-right text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                        className="w-20 rounded-lg border border-neutral-300 px-1.5 py-0.5 text-right text-xs dark:border-neutral-700 dark:bg-neutral-900"
                       />
                       円
                       {stop.parking_source === 'manual' && (
@@ -353,7 +353,7 @@ export function RouteDetailPanel({
                         aria-label="上へ移動"
                         disabled={!canEdit || stopIndex === 0}
                         onClick={() => moveStop(stopIndex, -1)}
-                        className="rounded border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
+                        className="rounded-lg border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
                       >
                         ↑
                       </button>
@@ -362,7 +362,7 @@ export function RouteDetailPanel({
                         aria-label="下へ移動"
                         disabled={!canEdit || stopIndex === route.stops.length - 1}
                         onClick={() => moveStop(stopIndex, 1)}
-                        className="rounded border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
+                        className="rounded-lg border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
                       >
                         ↓
                       </button>
@@ -371,7 +371,7 @@ export function RouteDetailPanel({
                         aria-label="削除"
                         disabled={!canEdit || route.stops.length <= 1}
                         onClick={() => removeStop(stopIndex)}
-                        className="rounded border border-red-300 px-1.5 py-0.5 text-xs text-red-600 disabled:opacity-30 dark:border-red-900 dark:text-red-400"
+                        className="rounded-lg border border-red-300 px-1.5 py-0.5 text-xs text-red-600 disabled:opacity-30 dark:border-red-900 dark:text-red-400"
                       >
                         ✕
                       </button>

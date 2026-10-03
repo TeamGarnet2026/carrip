@@ -72,9 +72,9 @@ export function DestinationPicker({ value, onChange }: DestinationPickerProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-line bg-linear-to-br from-white to-[#f3f8f7]">
-      <div className="space-y-1 border-b border-line px-4 py-4">
-        <h3 className="m-0 text-lg font-black text-ink">どこへ行きますか？</h3>
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+      <div className="space-y-1 border-b border-line px-5 py-4">
+        <h3 className="m-0 text-lg font-bold text-ink">どこへ行きますか？</h3>
         <p className="m-0 text-sm leading-relaxed text-muted">
           {drillLevel === 'area'
             ? '地方を選んでください。'
@@ -82,13 +82,13 @@ export function DestinationPicker({ value, onChange }: DestinationPickerProps) {
         </p>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 border-b border-line bg-[#fbfcfd] px-4 py-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-line bg-soft px-5 py-3">
         <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold">
-          <span className="rounded-full bg-soft px-2.5 py-1 text-muted">日本</span>
+          <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-muted">日本</span>
           {activeRegion && (
             <>
               <span className="text-muted">›</span>
-              <span className="rounded-full bg-[#e8f4f2] px-2.5 py-1 text-brand-dark">
+              <span className="rounded-full bg-brand-soft px-2.5 py-1 text-brand-dark">
                 {regionLabel(activeRegion)}
               </span>
             </>
@@ -106,17 +106,17 @@ export function DestinationPicker({ value, onChange }: DestinationPickerProps) {
           <button
             type="button"
             onClick={goBackToAreas}
-            className="ml-auto text-xs font-extrabold text-brand hover:underline"
+            className="ml-auto rounded-lg px-2 py-1 text-xs font-bold text-brand transition hover:bg-brand-soft"
           >
             地方選択に戻る
           </button>
         )}
       </div>
 
-      <div className="p-4">
+      <div className="p-5">
         {drillLevel === 'area' ? (
           <div
-            className="grid min-h-[300px] max-w-lg grid-cols-4 grid-rows-5 gap-2 rounded-lg border border-line bg-[#eef6f4] p-3 content-center"
+            className="grid min-h-[300px] max-w-lg grid-cols-4 grid-rows-5 gap-2 rounded-2xl bg-[radial-gradient(circle_at_70%_20%,#e3f4f0,#f1f7f6_60%)] p-3 content-center"
             aria-label="日本地図（地方選択）"
           >
             {REGION_GRID.map((region) => {
@@ -129,10 +129,10 @@ export function DestinationPicker({ value, onChange }: DestinationPickerProps) {
                   key={region.id}
                   type="button"
                   onClick={() => selectRegion(region.id)}
-                  className={`min-h-[44px] rounded-lg border text-xs font-black transition sm:text-sm ${region.className} ${
+                  className={`min-h-[44px] rounded-xl border text-xs font-bold transition sm:text-sm ${region.className} ${
                     hasSelection
-                      ? 'border-brand bg-[#e8f4f2] text-brand-dark shadow-sm'
-                      : 'border-[#c8d8dc] bg-white text-ink hover:border-brand/50 hover:bg-[#f8fcfb]'
+                      ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(15,138,126,0.25)]'
+                      : 'border-white bg-white/90 text-ink shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[0_4px_12px_rgba(15,23,42,0.08)]'
                   }`}
                 >
                   {region.label}
@@ -141,7 +141,7 @@ export function DestinationPicker({ value, onChange }: DestinationPickerProps) {
             })}
           </div>
         ) : (
-          <div className="max-w-lg rounded-lg border border-line bg-[#eef6f4] p-4">
+          <div className="max-w-lg rounded-2xl bg-[#f1f7f6] p-4">
             <div className="flex flex-wrap gap-2">
               {prefecturesInActiveRegion.map((prefecture) => {
                 const selected = selectedPrefecture === prefecture
@@ -151,10 +151,10 @@ export function DestinationPicker({ value, onChange }: DestinationPickerProps) {
                     key={prefecture}
                     type="button"
                     onClick={() => selectPrefecture(prefecture)}
-                    className={`rounded-lg border px-4 py-2.5 text-sm font-black transition ${
+                    className={`rounded-xl border px-4 py-2.5 text-sm font-bold transition ${
                       selected
-                        ? 'border-brand bg-[#e8f4f2] text-brand-dark shadow-sm ring-2 ring-brand/20'
-                        : 'border-[#c8d8dc] bg-white text-ink hover:border-brand/60'
+                        ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(15,138,126,0.25)]'
+                        : 'border-white bg-white text-ink shadow-[0_1px_2px_rgba(15,23,42,0.06)] hover:border-teal-300'
                     }`}
                   >
                     {prefecture}
@@ -167,14 +167,14 @@ export function DestinationPicker({ value, onChange }: DestinationPickerProps) {
       </div>
 
       {selectedPrefecture && (
-        <div className="flex items-center justify-between gap-3 border-t border-line bg-[#fbfcfd] px-4 py-3">
+        <div className="flex items-center justify-between gap-3 border-t border-line bg-brand-soft px-5 py-3">
           <p className="m-0 text-sm text-ink">
-            選択中: <strong className="font-black">{selectedPrefecture}</strong>
+            選択中: <strong className="font-bold text-brand-dark">{selectedPrefecture}</strong>
           </p>
           <button
             type="button"
             onClick={clearSelection}
-            className="text-xs font-extrabold text-muted hover:text-ink"
+            className="rounded-lg px-2 py-1 text-xs font-bold text-muted transition hover:bg-white hover:text-ink"
           >
             選択を解除
           </button>

@@ -13,7 +13,7 @@ type RoutesMapProps = {
 }
 
 const mapLoading = (
-  <div className="flex h-[380px] items-center justify-center rounded border border-dashed border-line text-sm text-muted">
+  <div className="flex h-[380px] items-center justify-center rounded-lg border border-dashed border-line text-sm text-muted">
     地図を読み込み中…
   </div>
 )
@@ -55,7 +55,7 @@ export function RoutesMap(props: RoutesMapProps) {
     return (
       <div className="space-y-3">
         {fallbackReason && (
-          <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
+          <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
             <p>{fallbackReason}</p>
             <p className="mt-2">
               Cloud Console →{' '}

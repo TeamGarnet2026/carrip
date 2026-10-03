@@ -47,7 +47,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
       <div>
-        <label htmlFor="email" className="mb-1 block text-sm font-medium">
+        <label htmlFor="email" className="mb-2 block text-[13px] font-bold text-ink">
           メールアドレス
         </label>
         <input
@@ -57,17 +57,17 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="carrip-field w-full rounded border border-line px-3 py-2 text-sm"
+          className="carrip-field min-h-[48px] w-full rounded-xl border border-line px-4 py-2.5 text-[15px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15"
           style={{
             colorScheme: 'light',
             backgroundColor: '#ffffff',
-            color: '#1f2a37',
-            WebkitTextFillColor: '#1f2a37',
+            color: '#0f172a',
+            WebkitTextFillColor: '#0f172a',
           }}
         />
       </div>
       <div>
-        <label htmlFor="password" className="mb-1 block text-sm font-medium">
+        <label htmlFor="password" className="mb-2 block text-[13px] font-bold text-ink">
           パスワード
         </label>
         <input
@@ -78,24 +78,24 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           minLength={6}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="carrip-field w-full rounded border border-line px-3 py-2 text-sm"
+          className="carrip-field min-h-[48px] w-full rounded-xl border border-line px-4 py-2.5 text-[15px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15"
           style={{
             colorScheme: 'light',
             backgroundColor: '#ffffff',
-            color: '#1f2a37',
-            WebkitTextFillColor: '#1f2a37',
+            color: '#0f172a',
+            WebkitTextFillColor: '#0f172a',
           }}
         />
       </div>
       {message && (
-        <p className="text-sm text-red-600" role="alert">
+        <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">
           {message}
         </p>
       )}
       <button
         type="submit"
         disabled={loading}
-        className="rounded bg-brand px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        className="min-h-[48px] rounded-xl bg-brand px-5 py-3 text-[15px] font-bold text-white shadow-[0_1px_2px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,138,126,0.25)] transition hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25 active:scale-[0.99] disabled:opacity-50"
       >
         {loading ? '処理中…' : isLogin ? 'ログイン' : '新規登録'}
       </button>
@@ -105,7 +105,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
             アカウントをお持ちでない方は{' '}
             <Link
               href={`/signup?redirectTo=${encodeURIComponent(redirectTo)}`}
-              className="underline"
+              className="font-bold text-brand-dark underline-offset-4 hover:underline"
             >
               新規登録
             </Link>
@@ -115,7 +115,7 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
             すでにアカウントがある方は{' '}
             <Link
               href={`/login?redirectTo=${encodeURIComponent(redirectTo)}`}
-              className="underline"
+              className="font-bold text-brand-dark underline-offset-4 hover:underline"
             >
               ログイン
             </Link>

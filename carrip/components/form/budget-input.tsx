@@ -17,14 +17,14 @@ export function BudgetInput({
 }: BudgetInputProps) {
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
+      <div className="inline-flex rounded-xl bg-neutral-100 p-1">
         <button
           type="button"
           onClick={() => onChangeMode('per_person')}
-          className={`rounded-full px-3 py-1 text-sm ${
+          className={`rounded-lg px-4 py-1.5 text-sm font-bold transition ${
             mode === 'per_person'
-              ? 'bg-teal-700 text-white dark:bg-teal-500 dark:text-neutral-950'
-              : 'border border-neutral-300 dark:border-neutral-700'
+              ? 'bg-surface text-brand-dark shadow-[0_1px_3px_rgba(15,23,42,0.12)]'
+              : 'text-muted hover:text-ink'
           }`}
         >
           1人あたり
@@ -32,17 +32,17 @@ export function BudgetInput({
         <button
           type="button"
           onClick={() => onChangeMode('total')}
-          className={`rounded-full px-3 py-1 text-sm ${
+          className={`rounded-lg px-4 py-1.5 text-sm font-bold transition ${
             mode === 'total'
-              ? 'bg-teal-700 text-white dark:bg-teal-500 dark:text-neutral-950'
-              : 'border border-neutral-300 dark:border-neutral-700'
+              ? 'bg-surface text-brand-dark shadow-[0_1px_3px_rgba(15,23,42,0.12)]'
+              : 'text-muted hover:text-ink'
           }`}
         >
           総額
         </button>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium">
+        <label className="mb-2 block text-[13px] font-bold text-ink">
           予算（任意・未入力は無制限）
         </label>
         <input
@@ -54,16 +54,16 @@ export function BudgetInput({
           onChange={(e) =>
             onChange(e.target.value ? Number(e.target.value) : null)
           }
-          className="carrip-field w-full rounded-lg border border-line px-3 py-2 text-sm"
+          className="carrip-field min-h-[48px] w-full rounded-xl border border-line px-4 py-2.5 text-[15px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15"
           style={{
             colorScheme: 'light',
             backgroundColor: '#ffffff',
-            color: '#1f2a37',
-            WebkitTextFillColor: '#1f2a37',
+            color: '#0f172a',
+            WebkitTextFillColor: '#0f172a',
           }}
         />
         {value != null && mode === 'total' && (
-          <p className="mt-1 text-xs text-neutral-500">
+          <p className="mt-1.5 text-xs text-muted">
             1人あたり約 {Math.ceil(value / people).toLocaleString('ja-JP')} 円
           </p>
         )}

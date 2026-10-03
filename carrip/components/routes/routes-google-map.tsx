@@ -194,7 +194,7 @@ export function RoutesGoogleMap({
 
   if (!apiKey) {
     return (
-      <div className="flex h-[380px] items-center justify-center rounded border border-dashed border-neutral-300 px-4 text-center text-sm text-neutral-500 dark:border-neutral-700">
+      <div className="flex h-[380px] items-center justify-center rounded-lg border border-dashed border-neutral-300 px-4 text-center text-sm text-neutral-500 dark:border-neutral-700">
         GOOGLE_CLOUD_API_KEY を .env.local に設定してください
         （Maps JavaScript API を有効化し、キーの API 制限に含めてください）
       </div>
@@ -203,7 +203,7 @@ export function RoutesGoogleMap({
 
   if (loadError) {
     return (
-      <div className="flex h-[380px] items-center justify-center rounded border border-red-200 px-4 text-center text-sm text-red-600 dark:border-red-900 dark:text-red-400">
+      <div className="flex h-[380px] items-center justify-center rounded-lg border border-red-200 px-4 text-center text-sm text-red-600 dark:border-red-900 dark:text-red-400">
         <div className="max-w-lg text-left">
           <p className="font-medium text-center">Google マップを表示できません</p>
           <p className="mt-2 text-xs leading-relaxed text-neutral-600 dark:text-neutral-400">
@@ -256,7 +256,7 @@ export function RoutesGoogleMap({
 
   if (!isLoaded) {
     return (
-      <div className="flex h-[380px] items-center justify-center rounded border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
+      <div className="flex h-[380px] items-center justify-center rounded-lg border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
         地図を読み込み中…
       </div>
     )
@@ -273,7 +273,7 @@ export function RoutesGoogleMap({
       : []
 
   return (
-    <div className="overflow-hidden rounded border border-neutral-200 dark:border-neutral-800">
+    <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
       <GoogleMap
         mapContainerStyle={MAP_CONTAINER_STYLE}
         center={defaultCenter}
@@ -375,7 +375,7 @@ export function RoutesGoogleMap({
               key={route.id}
               type="button"
               onClick={() => onSelectRoute(route.id)}
-              className={`flex items-center gap-2 rounded px-2 py-1 text-xs transition ${
+              className={`flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition ${
                 isSelected
                   ? 'bg-neutral-100 font-medium dark:bg-neutral-800'
                   : 'opacity-70 hover:opacity-100'

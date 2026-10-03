@@ -54,14 +54,14 @@ export default async function TripsPage() {
       }
     >
       {trips.length === 0 ? (
-        <div className="carrip-panel border-dashed p-8 text-center">
+        <div className="carrip-panel border-dashed p-10 text-center">
           <p className="text-sm text-muted">保存済みプランはありません</p>
           <Link href="/plan/new?step=1" className="mt-4 inline-block">
             <Button>最初のプランを作成</Button>
           </Link>
         </div>
       ) : (
-        <ul className="grid gap-3">
+        <ul className="m-0 grid list-none gap-4 p-0 sm:grid-cols-2 xl:grid-cols-3">
           {trips.map((trip) => (
             <TripCard key={trip.id} trip={trip} />
           ))}

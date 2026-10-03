@@ -41,45 +41,62 @@ export function RouteCard({
   const legDurations = roundTrip ? computeRoundTripLegDurations(route) : null
 
   return (
-    <Card isClickable={!!onClick} isSelected={isSelected} onClick={onClick}>
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h3 className="font-semibold">{heading}</h3>
+    <Card
+      isClickable={!!onClick}
+      isSelected={isSelected}
+      onClick={onClick}
+      className="flex h-full flex-col"
+    >
+      <div className="mb-1 flex flex-wrap items-center gap-2">
+        <h3 className="m-0 text-base font-bold text-ink">{heading}</h3>
         {showRecommendBadge && <Badge variant="info" label="おすすめ" />}
+        {isSelected && (
+          <span className="ml-auto grid h-6 w-6 place-items-center rounded-full bg-brand text-xs font-bold text-white">
+            ✓
+          </span>
+        )}
       </div>
 
       {route.summary && (
-        <p className="mb-4 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+        <p className="m-0 text-[13px] leading-relaxed text-muted">
           {route.summary}
         </p>
       )}
 
-      <div className="mb-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+      <div className="my-4 flex items-end justify-between gap-3 rounded-xl bg-soft px-4 py-3">
         <div>
-          <p className="text-xs text-neutral-500">総距離</p>
-          <p className="font-medium">{route.total_distance_km} km</p>
-        </div>
-        <div>
-          <p className="text-xs text-neutral-500">所要時間</p>
-          {legDurations ? (
-            <div className="space-y-0.5 font-medium">
-              <p>行 {formatDurationMinutes(legDurations.outboundMin)}</p>
-              <p>帰 {formatDurationMinutes(legDurations.returnMin)}</p>
-            </div>
-          ) : (
-            <p className="font-medium">{formatRouteDuration(route)}</p>
-          )}
-        </div>
-        <div>
-          <p className="text-xs text-neutral-500">総費用</p>
-          <p className="font-medium">{formatYen(route.total_cost)}</p>
-        </div>
-        <div>
-          <p className="text-xs text-muted">1人あたり</p>
-          <p className="font-extrabold text-brand-dark">
+          <p className="m-0 text-xs font-bold text-muted">1人あたり</p>
+          <p className="m-0 text-2xl leading-tight font-bold tracking-tight text-brand-dark tabular-nums">
             {formatYen(route.cost_per_person)}
           </p>
         </div>
+        <p className="m-0 text-right text-xs text-muted">
+          総費用
+          <span className="block text-sm font-bold text-ink tabular-nums">
+            {formatYen(route.total_cost)}
+          </span>
+        </p>
       </div>
+
+      <div className="mb-4 grid grid-cols-2 gap-3 text-sm">
+        <div>
+          <p className="m-0 text-xs text-muted">総距離</p>
+          <p className="m-0 font-bold tabular-nums">{route.total_distance_km} km</p>
+        </div>
+        <div>
+          <p className="m-0 text-xs text-muted">所要時間</p>
+          {legDurations ? (
+            <div className="space-y-0.5 font-bold tabular-nums">
+              <p className="m-0">行 {formatDurationMinutes(legDurations.outboundMin)}</p>
+              <p className="m-0">帰 {formatDurationMinutes(legDurations.returnMin)}</p>
+            </div>
+          ) : (
+            <p className="m-0 font-bold tabular-nums">{formatRouteDuration(route)}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-auto" />
 
       <CostBreakdownPanel
         breakdown={route.cost_breakdown}
