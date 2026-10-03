@@ -265,15 +265,20 @@
     box-shadow: var(--shadow-carrip);
   }
 
-  .carrip-entry-screen {
-    min-height: 100dvh;
+  /* トップ画面のメインビジュアル（ワークスペース内のカードとして表示） */
+  .carrip-hero {
+    position: relative;
+    overflow: hidden;
     display: grid;
-    place-items: center;
-    padding: 32px;
+    align-content: end;
+    min-height: 420px;
+    padding: 48px;
+    border-radius: 24px;
     color: #ffffff;
+    box-shadow: var(--shadow-raised);
     background:
-      radial-gradient(120% 90% at 0% 100%, rgba(15, 138, 126, 0.55), transparent 60%),
-      linear-gradient(100deg, rgba(2, 6, 23, 0.86) 0%, rgba(2, 6, 23, 0.55) 55%, rgba(2, 6, 23, 0.25) 100%),
+      radial-gradient(120% 90% at 0% 100%, rgba(15, 138, 126, 0.6), transparent 60%),
+      linear-gradient(100deg, rgba(2, 6, 23, 0.86) 0%, rgba(2, 6, 23, 0.55) 55%, rgba(2, 6, 23, 0.2) 100%),
       url("https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80")
         center / cover;
   }
@@ -285,24 +290,31 @@
     -webkit-backdrop-filter: blur(12px);
   }
 
-  .carrip-auth-screen {
-    min-height: 100dvh;
+  /* ログイン・新規登録（左: ビジュアル / 右: フォーム のカード） */
+  .carrip-auth-card {
+    width: min(960px, 100%);
+    margin: 8px auto 0;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(380px, 480px);
-    background: var(--color-bg);
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 440px);
+    overflow: hidden;
+    border: 1px solid var(--color-line);
+    border-radius: 24px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-carrip);
   }
 
   .carrip-auth-visual {
-    padding: 48px;
+    padding: 40px;
     color: #ffffff;
     background:
-      radial-gradient(120% 90% at 0% 100%, rgba(15, 138, 126, 0.55), transparent 60%),
-      linear-gradient(100deg, rgba(2, 6, 23, 0.86), rgba(2, 6, 23, 0.4)),
-      url("https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80")
+      radial-gradient(120% 90% at 0% 100%, rgba(15, 138, 126, 0.6), transparent 60%),
+      linear-gradient(160deg, rgba(2, 6, 23, 0.4), rgba(2, 6, 23, 0.86)),
+      url("https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80")
         center / cover;
     display: grid;
     align-content: end;
-    gap: 18px;
+    gap: 16px;
+    min-height: 480px;
   }
 
   .carrip-auth-panel {
@@ -485,8 +497,15 @@
       padding: 14px 16px calc(88px + env(safe-area-inset-bottom));
     }
 
-    .carrip-auth-screen {
+    .carrip-auth-card {
       grid-template-columns: 1fr;
+      margin-top: 0;
+    }
+
+    .carrip-hero {
+      min-height: 0;
+      padding: 28px 22px;
+      border-radius: 20px;
     }
 
     .carrip-auth-visual {

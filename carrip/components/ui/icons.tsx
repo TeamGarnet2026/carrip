@@ -47,6 +47,16 @@ export function BookmarkIcon(props: IconProps) {
   )
 }
 
+export function WalletIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18a1 1 0 0 1 1 1v2" />
+      <path d="M4 7.5V18a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 7.5Z" />
+      <circle cx="16" cy="14.5" r="1.2" />
+    </BaseIcon>
+  )
+}
+
 export function CarIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

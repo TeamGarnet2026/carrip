@@ -24,20 +24,24 @@ export function AppShell({
   actions,
   authVisual,
 }: AppShellProps) {
-  if (variant === 'entry') {
-    return <div className="carrip-entry-screen">{children}</div>
-  }
+  // どの画面もサイドバー付きの同じ枠に収め、画面遷移しても別アプリに見えないようにする
+  let content: ReactNode = children
 
   if (variant === 'auth') {
-    return (
-      <div className="carrip-auth-screen">
+    content = (
+      <div className="carrip-auth-card">
         <div className="carrip-auth-visual">
           {authVisual ?? (
             <>
-              <h1 className="m-0 max-w-[650px] text-[clamp(34px,5vw,56px)] leading-[1.15] font-bold tracking-tight">
-                グループドライブ旅行を、費用込みで計画
-              </h1>
-              <p className="m-0 max-w-[560px] text-base leading-[1.9] text-white/80">
+              <p className="carrip-glass m-0 w-fit rounded-full px-3 py-1 text-xs font-bold text-white/90">
+                Carrip アカウント
+              </p>
+              <h2 className="m-0 text-[clamp(24px,2.6vw,32px)] leading-[1.3] font-bold tracking-tight">
+                グループドライブ旅行を、
+                <br />
+                費用込みで計画
+              </h2>
+              <p className="m-0 text-sm leading-[1.9] text-white/80">
                 行きたい場所を選ぶだけで、回る順番と燃料費・高速料金・駐車料・入場料を計算します。
               </p>
             </>
@@ -46,14 +50,8 @@ export function AppShell({
         <div className="carrip-auth-panel">{children}</div>
       </div>
     )
-  }
-
-  if (variant === 'center') {
-    return (
-      <div className="flex min-h-dvh items-center justify-center bg-bg p-6">
-        <div className="w-full max-w-lg">{children}</div>
-      </div>
-    )
+  } else if (variant === 'center') {
+    content = <div className="mx-auto w-full max-w-lg pt-6 sm:pt-12">{children}</div>
   }
 
   return (
@@ -77,7 +75,7 @@ export function AppShell({
             {actions && <div className="flex items-center gap-2">{actions}</div>}
           </header>
         )}
-        <div className="carrip-workspace">{children}</div>
+        <div className="carrip-workspace">{content}</div>
       </div>
     </div>
   )

@@ -35,7 +35,9 @@ const NAV_ITEMS: Array<{
     href: '/trips',
     label: '保存済み',
     icon: BookmarkIcon,
-    match: (path) => path.startsWith('/trips'),
+    // ログイン画面は「保存済み」から誘導されるため、同じ項目を選択中として表示する
+    match: (path) =>
+      path.startsWith('/trips') || path === '/login' || path === '/signup',
     prefetch: false,
   },
 ]
