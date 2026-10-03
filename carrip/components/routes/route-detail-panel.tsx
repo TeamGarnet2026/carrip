@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState, type PointerEvent } from 'react'
 import { OpenInGoogleMapsLink } from '@/components/maps/open-in-google-maps-link'
 import { RoundTripLegend } from '@/components/maps/round-trip-legend'
 import { CostBreakdownPanel } from '@/components/route/cost-breakdown-panel'
@@ -14,6 +14,7 @@ import {
   type RoundTripLeg,
 } from '@/lib/maps/round-trip-display'
 import { driverChangeBadgeLabel } from '@/lib/poi/stop-labels'
+import { moveItem } from '@/lib/routes/reorder-stops'
 import type { RouteCandidate, RouteStop } from '@/lib/routes/types'
 
 type RouteDetailPanelProps = {
@@ -44,6 +45,9 @@ export function RouteDetailPanel({
   showIndexLabel = true,
 }: RouteDetailPanelProps) {
   const [showAddList, setShowAddList] = useState(false)
+  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
+  const stopItemRefs = useRef<(HTMLLIElement | null)[]>([])
 
   const canEdit = editable && onStopsChange != null && !recalculating
   const roundTrip = isRoundTripRoute(route)
@@ -57,9 +61,47 @@ export function RouteDetailPanel({
     const target = stopIndex + direction
     if (target < 0 || target >= route.stops.length) return
 
-    const stops = [...route.stops]
-    ;[stops[stopIndex], stops[target]] = [stops[target], stops[stopIndex]]
-    onStopsChange!(stops, true)
+    onStopsChange!(moveItem(route.stops, stopIndex, target), true)
+  }
+
+  // ポインターイベントで実装し、マウスとタッチ（スマートフォン）の両方でドラッグできるようにする
+  function handleDragStart(event: PointerEvent<HTMLElement>, stopIndex: number) {
+    if (!canEdit || route.stops.length <= 1) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setDragFrom(stopIndex)
+    setDragOver(stopIndex)
+  }
+
+  function handleDragMove(event: PointerEvent<HTMLElement>) {
+    if (dragFrom == null) return
+    const rects = stopItemRefs.current
+      .slice(0, route.stops.length)
+      .map((item) => item?.getBoundingClientRect())
+    const y = event.clientY
+
+    let over = rects.findIndex(
+      (rect) => rect != null && y >= rect.top && y <= rect.bottom
+    )
+    if (over < 0) {
+      const firstTop = rects[0]?.top ?? 0
+      over = y < firstTop ? 0 : route.stops.length - 1
+    }
+    if (over !== dragOver) setDragOver(over)
+  }
+
+  function handleDragEnd() {
+    const from = dragFrom
+    const to = dragOver
+    setDragFrom(null)
+    setDragOver(null)
+    if (!canEdit || from == null || to == null || from === to) return
+    onStopsChange!(moveItem(route.stops, from, to), true)
+  }
+
+  function handleDragCancel() {
+    setDragFrom(null)
+    setDragOver(null)
   }
 
   function removeStop(stopIndex: number) {
@@ -215,11 +257,38 @@ export function RouteDetailPanel({
                 stop.is_rest_stop
               )
               const stopLeg = stopLegs[stopIndex]
+              const isDragging = dragFrom === stopIndex
+              const isDropTarget =
+                dragFrom != null && dragOver === stopIndex && dragFrom !== stopIndex
               return (
                 <li
                   key={stop.place_id}
-                  className="flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-2 last:border-0 dark:border-neutral-900"
+                  ref={(element) => {
+                    stopItemRefs.current[stopIndex] = element
+                  }}
+                  className={`flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-2 last:border-0 dark:border-neutral-900 ${
+                    isDragging ? 'opacity-50' : ''
+                  } ${
+                    isDropTarget
+                      ? 'rounded bg-teal-50 ring-2 ring-teal-500 dark:bg-teal-950/40'
+                      : ''
+                  }`}
                 >
+                  {editable && (
+                    <button
+                      type="button"
+                      aria-label={`${stop.name}をドラッグして並び替え`}
+                      title="ドラッグして並び替え"
+                      disabled={!canEdit || route.stops.length <= 1}
+                      onPointerDown={(event) => handleDragStart(event, stopIndex)}
+                      onPointerMove={handleDragMove}
+                      onPointerUp={handleDragEnd}
+                      onPointerCancel={handleDragCancel}
+                      className="flex h-8 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-base text-neutral-400 hover:bg-neutral-100 active:cursor-grabbing disabled:cursor-default disabled:opacity-30 dark:hover:bg-neutral-800"
+                    >
+                      ⠿
+                    </button>
+                  )}
                   <OrderBadge
                     kind="stop"
                     index={
@@ -324,7 +393,7 @@ export function RouteDetailPanel({
 
           {editable && (
             <p className="mt-2 text-xs text-neutral-500">
-              並び替え・削除・追加でルートと費用を自動で再計算します。駐車料金は実際の料金がわかったら上書きできます。
+              ⠿ をドラッグ（または ↑↓）して並び替えられます。並び替え・削除・追加でルートと費用を自動で再計算します。駐車料金は実際の料金がわかったら上書きできます。
             </p>
           )}
 
