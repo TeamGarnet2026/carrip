@@ -1,0 +1,51 @@
+name: Sync Enecho gasoline prices
+
+# 毎週、資源エネルギー庁 / 石油情報センターの週次価格を Supabase に UPSERT する。
+#
+# 必要な GitHub Secrets（Settings → Secrets and variables → Actions）:
+#   - NEXT_PUBLIC_SUPABASE_URL … 例: https://xxxx.supabase.co
+#   - SUPABASE_SERVICE_ROLE_KEY … service_role（anon ではない）
+# 任意:
+#   - ENECHO_WEEKLY_EXCEL_URL … 固定したい場合のみ（通常は自動解決）
+
+on:
+  schedule:
+    # 毎週水曜 07:00 UTC ≒ 16:00 JST（通常の水曜公表後）
+    - cron: '0 7 * * 3'
+    # 遅延公表向けに木曜も再実行
+    - cron: '0 7 * * 4'
+  workflow_dispatch:
+
+concurrency:
+  group: sync-enecho-fuel-prices
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: carrip
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: carrip/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync weekly gasoline prices
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # 未設定なら results.html / 直近水曜 *s5.xlsx / oil-info の順で自動解決
+          ENECHO_WEEKLY_EXCEL_URL: ${{ secrets.ENECHO_WEEKLY_EXCEL_URL }}
+        run: npm run fuel:sync
