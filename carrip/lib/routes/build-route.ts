@@ -90,7 +90,8 @@ async function fetchRouteWithDriverChanges(
         maxDriveMin,
         useHighway,
         origin,
-        roundTrip
+        roundTrip,
+        navitime.polyline
       )
 
       if (withDriverChangeStops.length === pathStops.length) break
