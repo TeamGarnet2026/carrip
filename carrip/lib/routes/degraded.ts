@@ -12,7 +12,7 @@ export const DEGRADED_BANNER_MESSAGES: Record<DegradedReason, string> = {
   government_fuel:
     '最新の給油所価格を取得できないため、月次データまたは固定単価で燃料費を計算しています',
   navitime:
-    'NAVITIME APIが利用できないため、距離・時間は推定値、高速料金は0円で計算しています',
+    'NAVITIME APIが利用できなかったルートは、距離・時間を推定値、高速料金を0円で計算しています',
   google_routes:
     'Google Routes APIも利用できないため、直線距離ベースの概算で計算しています。精度が低下しています',
   gemini:

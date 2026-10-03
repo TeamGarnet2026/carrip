@@ -324,10 +324,6 @@ export async function generateRoutes(
         stops: toNavitimeStops(pathStops),
       })
 
-      if (navitime.degraded && navitime.degraded_reason) {
-        routeDegradedReasons.push(navitime.degraded_reason)
-      }
-
       if (maxDriveMin > 0) {
         for (let attempt = 0; attempt < 3; attempt += 1) {
           const withDriverChangeStops = await insertDriverChangeStops(
@@ -348,10 +344,12 @@ export async function generateRoutes(
             origin: originLatLng,
             stops: toNavitimeStops(pathStops),
           })
-          if (navitime.degraded && navitime.degraded_reason) {
-            routeDegradedReasons.push(navitime.degraded_reason)
-          }
         }
+      }
+
+      // 途中の再探索が失敗しても、表示に使う最終結果が成功していれば推定値ではない
+      if (navitime.degraded && navitime.degraded_reason) {
+        routeDegradedReasons.push(navitime.degraded_reason)
       }
 
       const responsePathStops = visibleStopsForRoute(pathStops, directRoute)
