@@ -110,8 +110,7 @@ function buildSections(
 /** DB に保存されたルートを提案画面と同じ RouteCandidate 形式へ変換 */
 export function tripRouteToCandidate(
   route: TripDetailRoute,
-  trip: Tables<'trips'>,
-  index = 0
+  trip: Tables<'trips'>
 ): RouteCandidate {
   const stops = route.stops
     .slice()
@@ -154,7 +153,5 @@ export function tripRouteToCandidate(
 }
 
 export function tripDetailToCandidates(detail: TripDetail): RouteCandidate[] {
-  return detail.routes.map((route, index) =>
-    tripRouteToCandidate(route, detail.trip, index)
-  )
+  return detail.routes.map((route) => tripRouteToCandidate(route, detail.trip))
 }

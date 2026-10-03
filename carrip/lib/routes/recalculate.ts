@@ -1,11 +1,15 @@
-import { fetchNavitimeCarRouteWithFallback } from '@/lib/external/fallback'
 import { geocodeAddress } from '@/lib/google/places'
 import { estimateRouteMetricsLocally } from '@/lib/google/routes-api'
 import { resolveFuelPriceForVehicle } from '@/lib/prices/fuel'
+import { resolveDestinationPoints } from '@/lib/routes/build'
+import { buildSingleRoute, routeStopToPoiPlace } from '@/lib/routes/build-route'
 import { buildCostBreakdown, sumCostBreakdown } from '@/lib/routes/cost-estimate'
 import {
+  buildDestinationStopsAsPlaces,
+  isDirectRoute,
+} from '@/lib/routes/cost-focused-plan'
+import {
   aggregateParkingSource,
-  sumStopAdmissionPerPerson,
   sumStopParking,
 } from '@/lib/routes/cost-sources'
 import type { RouteRecalculateInput } from '@/lib/routes/schema'
@@ -88,7 +92,7 @@ function buildResult(
   }
 }
 
-/** 編集後の立ち寄り地点でルートと費用を再計算（NAVITIME 1回 + 燃料単価のみ） */
+/** 編集後の立ち寄り地点でルートと費用を再計算する（運転交代地点の挿入を含む） */
 export async function recalculateRoute(
   input: RouteRecalculateInput
 ): Promise<RouteRecalculateResult> {
@@ -104,35 +108,47 @@ export async function recalculateRoute(
     request.vehicle
   )
 
-  const navitime = await fetchNavitimeCarRouteWithFallback({
+  const touristStops = stops.filter((stop) => !stop.is_rest_stop)
+  // 直行ルートに観光地が追加されたら、駐車場代・入場料も計上する通常ルートとして扱う
+  const directRoute = isDirectRoute(input.route_id) && touristStops.length === 0
+
+  let pathStops = stops.map(routeStopToPoiPlace)
+  if (isDirectRoute(input.route_id)) {
+    // 直行ルートの休憩地点は目的地ウェイポイントを基準に挿入し直す
+    const destinations = await resolveDestinationPoints(request.prefecture)
+    pathStops = [
+      ...touristStops.map(routeStopToPoiPlace),
+      ...buildDestinationStopsAsPlaces(request.prefecture, destinations),
+    ]
+  }
+
+  const { route, degradedReason } = await buildSingleRoute({
     request,
     routeId: input.route_id,
+    title: '',
+    summary: '',
     origin: originLatLng,
-    stops: stops.map((stop) => ({
-      id: stop.place_id,
-      name: stop.name,
-      lat: stop.lat,
-      lng: stop.lng,
-      category: stop.category,
-    })),
+    pathStops,
+    directRoute,
+    fuelPrice,
+    presetStops: new Map(stops.map((stop) => [stop.place_id, stop])),
   })
 
-  return buildResult(
-    input,
-    stops,
-    {
-      distanceKm: navitime.distanceKm,
-      durationMin: navitime.durationMin,
-      tollYen: navitime.tollYen,
-      polyline: navitime.polyline,
-      sections: navitime.sections,
-      departureTime: navitime.departureTime,
-      arrivalTime: navitime.arrivalTime,
-      degraded: navitime.degraded,
-    },
-    fuelPrice.source,
-    fuelPrice.price_yen
-  )
+  return {
+    stops: route.stops,
+    polyline: route.polyline,
+    sections: route.sections,
+    cost_breakdown: route.cost_breakdown,
+    cost_sources: route.cost_sources,
+    total_distance_km: route.total_distance_km,
+    total_duration_min: route.total_duration_min,
+    total_cost: route.total_cost,
+    cost_per_person: route.cost_per_person,
+    departure_time: route.departure_time,
+    arrival_time: route.arrival_time,
+    round_trip: route.round_trip,
+    degraded: degradedReason != null,
+  }
 }
 
 /** 外部APIを一切使わないスタブ再計算（直線距離ベース概算） */

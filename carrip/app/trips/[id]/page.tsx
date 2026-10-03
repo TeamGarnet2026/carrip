@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { AppShell } from '@/components/layout/app-shell'
 import { TripDetailView } from '@/components/trip/trip-detail-view'
 import { getTripDetailForUser } from '@/lib/trips/service'
+import { getUserWithTimeout } from '@/utils/supabase/get-user'
 import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +17,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   const supabase = await createClient()
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await getUserWithTimeout(supabase)
 
   if (!user) {
     notFound()

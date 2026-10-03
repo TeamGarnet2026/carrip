@@ -1,4 +1,10 @@
-import type { RouteGenerateRequest, RouteSearchResponse } from '@/lib/routes/types'
+import type {
+  RouteGenerateRequest,
+  RouteSearchResponse,
+  RouteStop,
+} from '@/lib/routes/types'
+
+export type StopOrderMode = 'auto' | 'manual'
 
 export type TripFormValues = {
   origin: string
@@ -27,6 +33,9 @@ export type TripFormValues = {
 export type PlanSession = {
   id: string
   form: TripFormValues
+  /** 行き先選択画面で選んだ場所（選んだ順） */
+  spots?: RouteStop[]
+  orderMode?: StopOrderMode
   routes?: RouteSearchResponse
   selectedRouteId?: string
   savedTripId?: string

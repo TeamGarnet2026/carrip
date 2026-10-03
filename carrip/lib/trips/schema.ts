@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import type { RouteCandidate } from '@/lib/routes/types'
-import { FUEL_TYPES } from '@/lib/routes/fuel'
 import { vehicleSchema } from '@/lib/routes/schema'
 
 const routeStopSchema = z.object({
@@ -63,7 +62,7 @@ export type CreateTripInput = z.infer<typeof createTripSchema>
 export type SavedRouteCandidate = RouteCandidate
 
 export const poiSearchQuerySchema = z.object({
-  q: z.string().min(1),
+  q: z.string().min(1).max(100),
   category: z.enum(['all', 'tourist', 'rest_area', 'service_area']).default('all'),
   prefecture: z.string().optional(),
 })

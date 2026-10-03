@@ -22,7 +22,7 @@ const NAV_ITEMS: Array<{
     label: '条件入力',
     icon: '✎',
     match: (path) =>
-      path.startsWith('/plan/new') || path.startsWith('/plan/generating'),
+      path.startsWith('/plan/new') || /^\/plan\/[^/]+\/spots/.test(path),
   },
   {
     href: '/trips',

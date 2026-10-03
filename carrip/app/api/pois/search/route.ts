@@ -1,17 +1,49 @@
 import { NextResponse } from 'next/server'
 import { ZodError } from 'zod'
-import { requireAuthUser } from '@/lib/api/auth'
-
+import { enforceRateLimit } from '@/lib/api/rate-limit'
+import { getCachedPoiSearch, setCachedPoiSearch } from '@/lib/cache/poi-cache'
 import { isGoogleCloudConfigured } from '@/lib/google/config'
+import type { PoiPlace } from '@/lib/google/types'
 import {
   searchRestAreas,
   searchTouristPois,
 } from '@/lib/poi/search'
-import { poiSearchQuerySchema } from '@/lib/trips/schema'
+import { toSpotCandidate } from '@/lib/poi/suggest'
+import { poiSearchQuerySchema, type PoiSearchQuery } from '@/lib/trips/schema'
+
+async function searchPlaces(query: PoiSearchQuery): Promise<PoiPlace[]> {
+  if (query.category === 'rest_area') {
+    return searchRestAreas(query.q, 'rest_area')
+  }
+  if (query.category === 'service_area') {
+    return searchRestAreas(query.q, 'service_area')
+  }
+  if (query.category === 'tourist') {
+    return searchTouristPois(query.q, query.prefecture)
+  }
+
+  const [tourist, restAreas] = await Promise.all([
+    searchTouristPois(query.q, query.prefecture),
+    searchRestAreas(query.q, 'all'),
+  ])
+  const seen = new Set<string>()
+  const places: PoiPlace[] = []
+  for (const place of [...tourist, ...restAreas]) {
+    if (seen.has(place.id)) continue
+    seen.add(place.id)
+    places.push(place)
+  }
+  return places
+}
 
 export async function GET(request: Request) {
-  const auth = await requireAuthUser()
-  if (auth.response) return auth.response
+  // ログイン不要で使えるため、Google Places の利用料を回数制限とキャッシュで抑える
+  const limited = await enforceRateLimit(request, {
+    name: 'pois-search',
+    limit: 20,
+    windowSeconds: 60,
+  })
+  if (limited) return limited
 
   if (!isGoogleCloudConfigured()) {
     return NextResponse.json(
@@ -23,44 +55,22 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
     const query = poiSearchQuerySchema.parse({
-      q: url.searchParams.get('q') ?? '',
+      q: url.searchParams.get('q')?.trim() ?? '',
       category: url.searchParams.get('category') ?? 'all',
       prefecture: url.searchParams.get('prefecture') ?? undefined,
     })
 
-    let places
-    if (query.category === 'rest_area') {
-      places = await searchRestAreas(query.q, 'rest_area')
-    } else if (query.category === 'service_area') {
-      places = await searchRestAreas(query.q, 'service_area')
-    } else if (query.category === 'tourist') {
-      places = await searchTouristPois(query.q, query.prefecture)
-    } else {
-      const [tourist, restAreas] = await Promise.all([
-        searchTouristPois(query.q, query.prefecture),
-        searchRestAreas(query.q, 'all'),
-      ])
-      const seen = new Set<string>()
-      places = []
-      for (const place of [...tourist, ...restAreas]) {
-        if (seen.has(place.id)) continue
-        seen.add(place.id)
-        places.push(place)
-      }
+    const cacheKey = `poi:text:${query.category}:${query.prefecture ?? ''}:${query.q}`
+    let places = await getCachedPoiSearch(cacheKey)
+    if (!places) {
+      places = await searchPlaces(query)
+      await setCachedPoiSearch(cacheKey, places)
     }
 
     return NextResponse.json({
       query,
       count: places.length,
-      places: places.map((place) => ({
-        place_id: place.id,
-        name: place.name,
-        address: place.address,
-        lat: place.lat,
-        lng: place.lng,
-        rating: place.rating,
-        category: place.category ?? query.category,
-      })),
+      places: places.map((place) => toSpotCandidate(place, query.category)),
     })
   } catch (error) {
     if (error instanceof ZodError) {
@@ -70,9 +80,10 @@ export async function GET(request: Request) {
       )
     }
 
-    const message =
-      error instanceof Error ? error.message : 'POI 検索に失敗しました'
     console.error('GET /api/pois/search failed:', error)
-    return NextResponse.json({ error: message }, { status: 502 })
+    return NextResponse.json(
+      { error: '場所の検索に失敗しました' },
+      { status: 502 }
+    )
   }
 }

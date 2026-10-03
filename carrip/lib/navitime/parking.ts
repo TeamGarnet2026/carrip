@@ -150,10 +150,6 @@ export async function resolveParkingFeesForStops(
   return Promise.all(stops.map((stop) => resolveParkingFeeForStop(stop)))
 }
 
-export function sumParkingFees(results: ParkingFeeResult[]): number {
-  return results.reduce((total, item) => total + item.total_yen, 0)
-}
-
 /**
  * RapidAPI 経由の NAVITIME には駐車料金 API がないため、
  * Places の parkingOptions とカテゴリ別デフォルト単価で算出する。

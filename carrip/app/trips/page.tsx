@@ -3,6 +3,7 @@ import { AppShell } from '@/components/layout/app-shell'
 import { TripCard } from '@/components/trip/trip-card'
 import { Button } from '@/components/ui/button'
 import { listTripsForUser } from '@/lib/trips/service'
+import { getUserWithTimeout } from '@/utils/supabase/get-user'
 import { createClient } from '@/utils/supabase/server'
 
 export const runtime = 'edge'
@@ -13,7 +14,7 @@ export default async function TripsPage() {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await getUserWithTimeout(supabase)
 
   if (!user) {
     return (

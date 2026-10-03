@@ -4,20 +4,22 @@ import type { RouteGenerateRequest } from '@/lib/routes/types'
 
 export const COST_FOCUSED_ROUTE_ID = 'route-1'
 export const BALANCED_ROUTE_ID = 'route-2'
+/** ユーザーが選んだ行き先を回るルート */
+export const CUSTOM_ROUTE_ID = 'route-custom'
 
 /** 観光地なし・目的地直行（運転交代休憩のみ可） */
 export function isDirectRoute(routeId: string): boolean {
   return routeId === COST_FOCUSED_ROUTE_ID || routeId === BALANCED_ROUTE_ID
 }
 
-/** @deprecated isDirectRoute を使用 */
-export function isCostFocusedRoute(routeId: string): boolean {
-  return routeId === COST_FOCUSED_ROUTE_ID
-}
-
-/** コスト重視は一般道、それ以外は高速道路を利用 */
-export function usesHighwayForRoute(routeId: string): boolean {
-  return !isCostFocusedRoute(routeId)
+/** コスト重視は一般道、バランス型は高速道路固定。それ以外はユーザーの高速設定に従う */
+export function usesHighwayForRoute(
+  routeId: string,
+  request?: Pick<RouteGenerateRequest, 'options'>
+): boolean {
+  if (routeId === COST_FOCUSED_ROUTE_ID) return false
+  if (routeId === BALANCED_ROUTE_ID) return true
+  return request?.options?.use_highway !== false
 }
 
 export function isDestinationRoutingStop(stopId: string): boolean {
@@ -62,9 +64,4 @@ export function buildDirectRouteSummary(
     return `${request.origin} から ${dest} まで高速道路のみで直行（観光地の立ち寄りなし）。所要時間と走行のバランスを重視した ${request.days} 日のプランです。`
   }
   return `${request.origin} から ${dest} まで一般道のみで直行（高速道路なし・観光地の立ち寄りなし）。高速料金を抑えた ${request.days} 日のプランです。`
-}
-
-/** @deprecated buildDirectRouteSummary を使用 */
-export function buildCostFocusedSummary(request: RouteGenerateRequest): string {
-  return buildDirectRouteSummary(COST_FOCUSED_ROUTE_ID, request)
 }

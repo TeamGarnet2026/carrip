@@ -20,16 +20,6 @@ export type NavitimeRouteCondition =
   | 'free_time'
   | 'free_only'
 
-export function conditionForRouteVariant(routeId: string): NavitimeRouteCondition {
-  switch (routeId) {
-    case 'route-1':
-      // コスト重視: 高速道路なし（一般道のみ）
-      return 'free_only'
-    case 'route-2':
-      return 'toll_time'
-    case 'route-3':
-      return 'toll_time'
-    default:
-      return 'recommend'
-  }
+export function conditionForHighwayUse(useHighway: boolean): NavitimeRouteCondition {
+  return useHighway ? 'toll_time' : 'free_only'
 }

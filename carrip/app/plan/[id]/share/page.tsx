@@ -1,5 +1,6 @@
 import { AppShell } from '@/components/layout/app-shell'
 import { SharePanel } from '@/components/share/share-panel'
+import { getUserWithTimeout } from '@/utils/supabase/get-user'
 import { createClient } from '@/utils/supabase/server'
 
 export const dynamic = 'force-dynamic'
@@ -18,7 +19,7 @@ export default async function PlanSharePage({
   const supabase = await createClient()
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await getUserWithTimeout(supabase)
 
   return (
     <AppShell

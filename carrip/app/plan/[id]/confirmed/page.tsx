@@ -1,5 +1,6 @@
 import { AppShell } from '@/components/layout/app-shell'
 import { TripSavePanel } from '@/components/plan/trip-save-panel'
+import { getUserWithTimeout } from '@/utils/supabase/get-user'
 import { createClient } from '@/utils/supabase/server'
 
 export const runtime = 'edge'
@@ -16,7 +17,7 @@ export default async function PlanConfirmedPage({
   const supabase = await createClient()
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await getUserWithTimeout(supabase)
 
   return (
     <AppShell

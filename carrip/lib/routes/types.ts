@@ -93,7 +93,6 @@ export type RouteSearchResult = {
   generated_at: string
   degraded?: boolean
   degraded_reasons?: DegradedReason[]
-  gemini_used?: boolean
 }
 
 export type RouteSearchResponse = RouteSearchResult & {

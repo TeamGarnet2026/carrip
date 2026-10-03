@@ -5,7 +5,7 @@ import {
   recalculateRouteStub,
 } from '@/lib/routes/recalculate'
 import { routeRecalculateSchema } from '@/lib/routes/schema'
-import { isRouteGenerationConfigured } from '@/lib/routes/generate'
+import { isRouteGenerationConfigured } from '@/lib/routes/build'
 
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url)

@@ -1,36 +1,4 @@
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-
-type PageHeaderProps = {
-  title: string
-  showBack?: boolean
-  backHref?: string
-  rightAction?: React.ReactNode
-}
-
-export function PageHeader({
-  title,
-  showBack = false,
-  backHref = '/',
-  rightAction,
-}: PageHeaderProps) {
-  return (
-    <div className="mb-6 flex items-center justify-between gap-4">
-      <div className="flex items-center gap-3">
-        {showBack && (
-          <Link
-            href={backHref}
-            className="text-sm font-extrabold text-brand-dark underline"
-          >
-            戻る
-          </Link>
-        )}
-        <h1 className="text-2xl font-black tracking-tight text-ink">{title}</h1>
-      </div>
-      {rightAction}
-    </div>
-  )
-}
 
 type StepperProps = {
   value: number

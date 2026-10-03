@@ -41,7 +41,7 @@ export function getCacheBackend(): CacheBackend | null {
 }
 
 export async function buildRouteCacheKey(
-  request: RouteGenerateRequest
+  request: RouteGenerateRequest | Record<string, unknown>
 ): Promise<string> {
   const hash = await sha256Hex(stableStringify(request))
   return `${ROUTE_CACHE_KEY_PREFIX}${hash}`

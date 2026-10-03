@@ -104,15 +104,20 @@ export async function computeRouteMetrics(
         origin: { address: origin },
         destination: destination
           ? {
-              latLng: {
-                latitude: destination.lat,
-                longitude: destination.lng,
+              location: {
+                latLng: {
+                  latitude: destination.lat,
+                  longitude: destination.lng,
+                },
               },
             }
           : { address: origin },
         intermediates,
         travelMode: 'DRIVE',
         routingPreference: options.useHighway === false ? 'TRAFFIC_UNAWARE' : 'TRAFFIC_AWARE',
+        ...(options.useHighway === false
+          ? { routeModifiers: { avoidHighways: true, avoidTolls: true } }
+          : {}),
       }),
     }
   )

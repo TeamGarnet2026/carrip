@@ -14,8 +14,8 @@ export default async function RouteCandidatesPage({
 
   return (
     <AppShell
-      title="ルート候補（3案）"
-      subtitle="費用内訳付きの候補ルートから最適なプランを選んでください"
+      title="ルートと料金"
+      subtitle="選んだ行き先を回るルートと、比較用の直行ルートの費用です"
     >
       <RoutesListPanel planId={id} />
     </AppShell>

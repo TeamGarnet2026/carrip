@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { ApiTestPanel } from '@/components/dev/api-test-panel'
 import { AppShell } from '@/components/layout/app-shell'
+import { getUserWithTimeout } from '@/utils/supabase/get-user'
 import { createClient } from '@/utils/supabase/server'
 
 export const runtime = 'edge'
@@ -14,7 +15,7 @@ export default async function TestApiPage() {
   const supabase = await createClient()
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await getUserWithTimeout(supabase)
 
   return (
     <AppShell
