@@ -21,7 +21,7 @@ export function VehicleSelector({ value, onChange }: VehicleSelectorProps) {
   return (
     <div className="space-y-4">
       <div>
-        <p className="mb-2 text-sm font-medium">車種</p>
+        <p className="mb-2 text-[13px] font-bold text-ink">車種</p>
         <div className="grid gap-2 sm:grid-cols-2">
           {VEHICLE_PRESETS.map((preset) => (
             <button
@@ -34,14 +34,14 @@ export function VehicleSelector({ value, onChange }: VehicleSelectorProps) {
                     preset.id === 'custom' ? value.fuel_km_l : preset.fuelKmL,
                 })
               }
-              className={`rounded-lg border p-3 text-left text-sm transition ${
+              className={`rounded-xl border p-4 text-left text-sm transition ${
                 value.type === preset.id
-                  ? 'border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950'
-                  : 'border-neutral-200 hover:border-teal-400 dark:border-neutral-800'
+                  ? 'border-brand bg-brand-soft ring-4 ring-brand/10'
+                  : 'border-line bg-surface hover:border-teal-300'
               }`}
             >
-              <p className="font-medium">{preset.label}</p>
-              <p className="mt-1 text-xs text-neutral-500">{preset.example}</p>
+              <p className="font-bold">{preset.label}</p>
+              <p className="mt-1 text-xs text-muted">{preset.example}</p>
             </button>
           ))}
         </div>
@@ -64,17 +64,17 @@ export function VehicleSelector({ value, onChange }: VehicleSelectorProps) {
             helperText="1〜200 の範囲で入力してください"
           />
           <div>
-            <p className="mb-2 text-sm font-medium">燃料種別</p>
+            <p className="mb-2 text-[13px] font-bold text-ink">燃料種別</p>
             <div className="grid grid-cols-3 gap-2">
               {FUEL_TYPES.map((fuelType) => (
                 <button
                   key={fuelType}
                   type="button"
                   onClick={() => onChange({ ...value, fuel_type: fuelType })}
-                  className={`rounded-lg border p-2 text-sm transition ${
+                  className={`rounded-xl border p-2.5 text-sm font-bold transition ${
                     value.fuel_type === fuelType
-                      ? 'border-teal-600 bg-teal-50 dark:border-teal-400 dark:bg-teal-950'
-                      : 'border-neutral-200 hover:border-teal-400 dark:border-neutral-800'
+                      ? 'border-brand bg-brand-soft ring-4 ring-brand/10'
+                      : 'border-line bg-surface hover:border-teal-300'
                   }`}
                 >
                   {FUEL_TYPE_LABELS[fuelType]}

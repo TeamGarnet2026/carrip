@@ -34,10 +34,10 @@ export function AppShell({
         <div className="carrip-auth-visual">
           {authVisual ?? (
             <>
-              <h1 className="m-0 max-w-[650px] text-[clamp(34px,5vw,58px)] leading-[1.16] font-black">
+              <h1 className="m-0 max-w-[650px] text-[clamp(34px,5vw,56px)] leading-[1.15] font-bold tracking-tight">
                 グループドライブ旅行を、費用込みで計画
               </h1>
-              <p className="m-0 max-w-[560px] text-[15px] leading-[1.8] text-[#dce9ea]">
+              <p className="m-0 max-w-[560px] text-base leading-[1.9] text-white/80">
                 行きたい場所を選ぶだけで、回る順番と燃料費・高速料金・駐車料・入場料を計算します。
               </p>
             </>
@@ -64,7 +64,7 @@ export function AppShell({
           <header className="carrip-topbar">
             <div>
               {title && (
-                <h1 className="m-0 text-2xl leading-tight font-black text-ink">
+                <h1 className="m-0 text-[22px] leading-tight font-bold tracking-tight text-ink">
                   {title}
                 </h1>
               )}

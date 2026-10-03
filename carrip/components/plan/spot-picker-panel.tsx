@@ -223,16 +223,16 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
       <div className="space-y-6">
-        <section className="rounded-xl border border-line bg-white p-5">
-          <h2 className="m-0 text-lg font-black text-ink">場所を検索して追加</h2>
-          <form onSubmit={handleSearch} className="mt-3 flex gap-2">
+        <section className="rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-carrip)]">
+          <h2 className="m-0 text-lg font-bold text-ink">場所を検索して追加</h2>
+          <form onSubmit={handleSearch} className="mt-4 flex gap-2">
             <input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder="例: 清水寺、嵐山、水族館"
               maxLength={100}
-              className="min-h-[42px] flex-1 rounded-[7px] border border-line bg-[#fbfcfd] px-3 text-sm text-ink outline-none focus:border-brand"
+              className="min-h-[44px] min-w-0 flex-1 rounded-[10px] border border-line px-4 text-[15px] text-ink shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15"
             />
             <Button type="submit" disabled={!query.trim()}>
               検索
@@ -249,8 +249,8 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
           )}
         </section>
 
-        <section className="rounded-xl border border-line bg-white p-5">
-          <h2 className="m-0 text-lg font-black text-ink">
+        <section className="rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-carrip)]">
+          <h2 className="m-0 text-lg font-bold text-ink">
             {session.form.prefecture.join('・')}のおすすめ
           </h2>
           <p className="mt-1 text-sm text-muted">
@@ -266,16 +266,16 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
         </section>
       </div>
 
-      <aside className="h-fit space-y-4 rounded-xl border border-line bg-white p-5 lg:sticky lg:top-4">
+      <aside className="h-fit space-y-5 rounded-2xl border border-line bg-surface p-6 shadow-[var(--shadow-carrip)] lg:sticky lg:top-24">
         <div className="flex items-baseline justify-between">
-          <h2 className="m-0 text-lg font-black text-ink">選んだ行き先</h2>
-          <span className="text-sm text-muted">
+          <h2 className="m-0 text-lg font-bold text-ink">選んだ行き先</h2>
+          <span className="rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-bold text-brand-dark tabular-nums">
             {selected.length} / {MAX_SELECTED_SPOTS}
           </span>
         </div>
 
         {selected.length === 0 ? (
-          <p className="text-sm text-muted">
+          <p className="rounded-xl border border-dashed border-neutral-300 bg-soft px-4 py-5 text-center text-sm text-muted">
             左の検索やおすすめから、行きたい場所を追加してください。
           </p>
         ) : (
@@ -283,10 +283,10 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
             {selected.map((stop, index) => (
               <li
                 key={stop.place_id}
-                className="flex items-center gap-2 rounded-lg border border-line px-3 py-2"
+                className="flex items-center gap-2 rounded-xl border border-line bg-surface px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.04)]"
               >
                 {orderMode === 'manual' && (
-                  <span className="w-5 text-center text-xs font-black text-brand">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand text-xs font-bold text-white">
                     {index + 1}
                   </span>
                 )}
@@ -302,7 +302,7 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
                       onClick={() =>
                         updateSelected(moveItem(selected, index, index - 1))
                       }
-                      className="px-1 text-muted hover:text-ink disabled:opacity-30"
+                      className="grid h-7 w-7 place-items-center rounded-lg text-muted transition hover:bg-neutral-100 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
                     >
                       ↑
                     </button>
@@ -313,7 +313,7 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
                       onClick={() =>
                         updateSelected(moveItem(selected, index, index + 1))
                       }
-                      className="px-1 text-muted hover:text-ink disabled:opacity-30"
+                      className="grid h-7 w-7 place-items-center rounded-lg text-muted transition hover:bg-neutral-100 hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent"
                     >
                       ↓
                     </button>
@@ -323,7 +323,7 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
                   type="button"
                   aria-label={`${stop.name}を外す`}
                   onClick={() => removeSpot(stop.place_id)}
-                  className="px-1 text-muted hover:text-red-600"
+                  className="grid h-7 w-7 place-items-center rounded-lg text-muted transition hover:bg-red-50 hover:text-red-600"
                 >
                   ×
                 </button>
@@ -333,7 +333,7 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
         )}
 
         <fieldset className="space-y-2">
-          <legend className="text-xs font-extrabold text-muted">回る順番</legend>
+          <legend className="mb-2 text-[13px] font-bold text-ink">回る順番</legend>
           {(
             [
               {
@@ -350,10 +350,10 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
           ).map((option) => (
             <label
               key={option.id}
-              className={`flex cursor-pointer gap-3 rounded-lg border px-3 py-2 text-sm ${
+              className={`flex cursor-pointer gap-3 rounded-xl border px-4 py-3 text-sm transition ${
                 orderMode === option.id
-                  ? 'border-brand bg-brand/5'
-                  : 'border-line'
+                  ? 'border-brand bg-brand-soft'
+                  : 'border-line hover:border-teal-300'
               }`}
             >
               <input
@@ -382,7 +382,7 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
         </Button>
         <Link
           href="/plan/new?step=1"
-          className="block text-center text-xs font-bold text-muted hover:text-ink"
+          className="block text-center text-[13px] font-bold text-muted transition hover:text-ink"
         >
           条件入力に戻る
         </Link>
@@ -427,7 +427,7 @@ function SpotList({
   }
 
   return (
-    <ul className="mt-3 divide-y divide-line">
+    <ul className="mt-4 divide-y divide-line">
       {state.places.map((spot) => {
         const added = selectedIds.has(spot.place_id)
         return (
@@ -438,7 +438,7 @@ function SpotList({
               </p>
               <p className="m-0 truncate text-xs text-muted">
                 {spot.rating != null && (
-                  <span className="mr-2 font-bold text-amber-600">
+                  <span className="mr-2 font-bold text-amber-500">
                     ★ {spot.rating.toFixed(1)}
                     {spot.user_rating_count != null &&
                       `（${spot.user_rating_count.toLocaleString('ja-JP')}件）`}

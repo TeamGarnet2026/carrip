@@ -12,17 +12,18 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variantClasses: Record<ButtonVariant, string> = {
   primary:
-    'bg-brand text-white hover:bg-brand-dark border border-transparent shadow-sm',
+    'border border-transparent bg-brand text-white shadow-[0_1px_2px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,138,126,0.25)] hover:bg-brand-dark hover:shadow-[0_1px_2px_rgba(15,23,42,0.08),0_6px_16px_rgba(15,138,126,0.3)]',
   secondary:
-    'border border-line bg-soft text-ink hover:bg-[#e8edef]',
-  ghost: 'text-ink hover:bg-soft border border-transparent',
-  danger: 'bg-red-600 text-white hover:bg-red-700 border border-transparent',
+    'border border-line bg-surface text-ink shadow-[0_1px_2px_rgba(15,23,42,0.05)] hover:border-neutral-300 hover:bg-soft',
+  ghost: 'border border-transparent text-ink hover:bg-neutral-100',
+  danger:
+    'border border-transparent bg-red-600 text-white shadow-[0_4px_12px_rgba(220,38,38,0.2)] hover:bg-red-700',
 }
 
 const sizeClasses: Record<ButtonSize, string> = {
-  sm: 'min-h-[36px] px-3 py-1.5 text-sm',
-  md: 'min-h-[42px] px-4 py-2 text-sm',
-  lg: 'min-h-[52px] px-6 py-3 text-base',
+  sm: 'min-h-[36px] rounded-[9px] px-3.5 py-1.5 text-[13px]',
+  md: 'min-h-[44px] rounded-[10px] px-5 py-2 text-sm',
+  lg: 'min-h-[52px] rounded-xl px-7 py-3 text-[15px]',
 }
 
 export function Button({
@@ -39,7 +40,7 @@ export function Button({
     <button
       type="button"
       disabled={disabled || isLoading}
-      className={`inline-flex items-center justify-center gap-2 rounded-[7px] font-extrabold transition disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-bold tracking-wide transition duration-150 select-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-45 disabled:shadow-none ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
       {...props}
     >
       {isLoading ? (

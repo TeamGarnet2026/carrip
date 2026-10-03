@@ -136,7 +136,7 @@ export function RoutesOsmMap({
       : []
 
   return (
-    <div className="overflow-hidden rounded border border-neutral-200 dark:border-neutral-800">
+    <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={8}
@@ -229,7 +229,7 @@ export function RoutesOsmMap({
               key={route.id}
               type="button"
               onClick={() => onSelectRoute(route.id)}
-              className={`flex items-center gap-2 rounded px-2 py-1 text-xs transition ${
+              className={`flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition ${
                 isSelected
                   ? 'bg-neutral-100 font-medium dark:bg-neutral-800'
                   : 'opacity-70 hover:opacity-100'

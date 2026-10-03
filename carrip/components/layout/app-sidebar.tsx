@@ -2,7 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import type { ComponentType, SVGProps } from 'react'
 import { LogoutButton } from '@/components/auth/logout-button'
+import {
+  BookmarkIcon,
+  CarIcon,
+  HomeIcon,
+  RouteIcon,
+} from '@/components/ui/icons'
 
 type AppSidebarProps = {
   email?: string | null
@@ -12,22 +19,22 @@ type AppSidebarProps = {
 const NAV_ITEMS: Array<{
   href: string
   label: string
-  icon: string
+  icon: ComponentType<SVGProps<SVGSVGElement>>
   match: (path: string) => boolean
   prefetch?: boolean
 }> = [
-  { href: '/', label: 'ホーム', icon: '⌂', match: (path) => path === '/' },
+  { href: '/', label: 'ホーム', icon: HomeIcon, match: (path) => path === '/' },
   {
     href: '/plan/new?step=1',
     label: '条件入力',
-    icon: '✎',
+    icon: RouteIcon,
     match: (path) =>
       path.startsWith('/plan/new') || /^\/plan\/[^/]+\/spots/.test(path),
   },
   {
     href: '/trips',
     label: '保存済み',
-    icon: '▣',
+    icon: BookmarkIcon,
     match: (path) => path.startsWith('/trips'),
     prefetch: false,
   },
@@ -40,7 +47,7 @@ export function AppSidebar({ email, showLogout }: AppSidebarProps) {
     <aside className="carrip-sidebar">
       <Link href="/" className="carrip-brand">
         <span className="carrip-brand-mark" aria-hidden>
-          🚗
+          <CarIcon />
         </span>
         <span>Carrip</span>
       </Link>
@@ -48,14 +55,16 @@ export function AppSidebar({ email, showLogout }: AppSidebarProps) {
       <nav className="carrip-nav" aria-label="メインナビゲーション">
         {NAV_ITEMS.map((item) => {
           const active = item.match(pathname)
+          const Icon = item.icon
           return (
             <Link
               key={item.href}
               href={item.href}
               prefetch={item.prefetch}
+              aria-current={active ? 'page' : undefined}
               className={`carrip-nav-link${active ? ' active' : ''}`}
             >
-              <span aria-hidden>{item.icon}</span>
+              <Icon />
               {item.label}
             </Link>
           )
