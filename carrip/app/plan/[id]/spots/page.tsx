@@ -9,10 +9,7 @@ export default async function SpotPickerPage({ params }: SpotPickerPageProps) {
   const { id } = await params
 
   return (
-    <AppShell
-      title="行き先を選ぶ"
-      subtitle="行きたい場所を検索やおすすめから選んでください"
-    >
+    <AppShell variant="entry">
       <SpotPickerPanel planId={id} />
     </AppShell>
   )

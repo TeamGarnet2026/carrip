@@ -54,7 +54,8 @@ export function RoutesMap(props: RoutesMapProps) {
   if (useOsmFallback) {
     return (
       <div className="space-y-3">
-        {fallbackReason && (
+        {/* キー設定の診断は開発者向けのため、本番では表示しない */}
+        {fallbackReason && process.env.NODE_ENV !== 'production' && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-900 dark:border-amber-700 dark:bg-amber-950 dark:text-amber-200">
             <p>{fallbackReason}</p>
             <p className="mt-2">
