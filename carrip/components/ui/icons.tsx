@@ -187,3 +187,12 @@ export function LogoMark({ size = 24, ...props }: IconProps & { size?: number })
     </svg>
   )
 }
+
+export function AlertIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 4 2.8 19.5h18.4L12 4Z" />
+      <path d="M12 10v4.5M12 17.2v.1" />
+    </BaseIcon>
+  )
+}

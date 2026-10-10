@@ -240,7 +240,7 @@ export function ItineraryList({
                   aria-label={`${stop.name}を上へ移動`}
                   disabled={!canEdit || index === 0}
                   onClick={() => move(index, -1)}
-                  className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-sunken disabled:opacity-25"
+                  className="hidden h-8 w-8 place-items-center rounded-lg text-muted hover:bg-sunken disabled:opacity-25 sm:grid"
                 >
                   ↑
                 </button>
@@ -249,7 +249,7 @@ export function ItineraryList({
                   aria-label={`${stop.name}を下へ移動`}
                   disabled={!canEdit || index === stops.length - 1}
                   onClick={() => move(index, 1)}
-                  className="grid h-8 w-8 place-items-center rounded-lg text-muted hover:bg-sunken disabled:opacity-25"
+                  className="hidden h-8 w-8 place-items-center rounded-lg text-muted hover:bg-sunken disabled:opacity-25 sm:grid"
                 >
                   ↓
                 </button>

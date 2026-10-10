@@ -362,14 +362,16 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
     </div>
   )
 
-  const map = selectedRouteId ? (
-    <RoutesMap
-      routes={sortedRoutes}
-      selectedRouteId={selectedRouteId}
-      onSelectRoute={handleSelectRoute}
-      originLabel={originLabel}
-    />
-  ) : null
+  const renderMap = (compact: boolean) =>
+    selectedRouteId ? (
+      <RoutesMap
+        routes={sortedRoutes}
+        selectedRouteId={selectedRouteId}
+        onSelectRoute={handleSelectRoute}
+        originLabel={originLabel}
+        compact={compact}
+      />
+    ) : null
 
   return (
     <div className="flex flex-col gap-7">
@@ -429,7 +431,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
         <div
           className={`flex min-w-0 flex-[1_1_380px] flex-col gap-3 ${mobileDetail ? 'hidden md:flex' : ''}`}
         >
-          <div className="overflow-hidden rounded-2xl md:hidden">{map}</div>
+          <div className="overflow-hidden rounded-2xl md:hidden">{renderMap(true)}</div>
           <div className="md:hidden">{sortControl}</div>
           <div role="radiogroup" aria-label="ルート候補" className="flex flex-col gap-3">
             {sortedRoutes.map((route, index) => (
@@ -468,7 +470,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
               recalculating={recalculating}
               addableStops={addableStops}
               onStopsChange={handleStopsChange}
-              map={<div className="hidden md:block">{map}</div>}
+              map={<div className="hidden md:block">{renderMap(false)}</div>}
               departureTime={session?.form.options.departureTime}
               fuelKmL={session?.form.vehicle.fuel_km_l}
             />

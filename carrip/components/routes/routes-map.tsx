@@ -10,6 +10,8 @@ type RoutesMapProps = {
   selectedRouteId: string
   onSelectRoute: (routeId: string) => void
   originLabel?: string
+  /** 地図だけを低めに表示し、凡例や出典を出さない（スマホ・プレビュー用） */
+  compact?: boolean
 }
 
 const mapLoading = (
