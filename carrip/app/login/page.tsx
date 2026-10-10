@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { AuthForm } from '@/components/auth/auth-form'
 import { AppShell } from '@/components/layout/app-shell'
 
@@ -21,18 +20,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <AppShell variant="auth">
-      <div className="grid gap-4">
-        <h2 className="m-0 text-[28px] font-bold tracking-tight text-ink">ログイン</h2>
-        <p className="m-0 text-[13px] leading-relaxed text-muted">
-          プランの保存やマイページ利用にはログインが必要です。
-        </p>
-        <AuthForm mode="login" redirectTo={redirectTo} />
-        <p className="text-sm">
-          <Link href="/" className="font-bold text-muted transition hover:text-ink">
-            トップへ戻る
-          </Link>
-        </p>
+      <div className="flex flex-col gap-2">
+        <h1 className="m-0 text-[26px] font-bold">ログイン</h1>
+        <p className="m-0 text-sm leading-[1.8] text-muted">プランの保存と共有にはログインが必要です。</p>
       </div>
+      <AuthForm mode="login" redirectTo={redirectTo} />
     </AppShell>
   )
 }

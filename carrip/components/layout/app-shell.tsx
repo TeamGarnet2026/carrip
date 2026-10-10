@@ -2,7 +2,6 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar'
 import { SiteHeader } from '@/components/layout/site-header'
-import { LogoMark } from '@/components/ui/icons'
 
 type AppShellVariant = 'app' | 'entry' | 'auth' | 'center'
 
@@ -33,41 +32,30 @@ export function AppShell({
   actions,
   authVisual,
 }: AppShellProps) {
-  // ログイン・新規登録は左に写真、右にフォームの全画面レイアウト
+  // ログイン・新規登録（PC_14）: 共通ヘッダーの下に「写真 + フォーム」のカード
   if (variant === 'auth') {
     return (
-      <div className="grid min-h-dvh bg-bg md:grid-cols-2">
-        <div className="relative hidden overflow-hidden bg-photo-3 md:block">
-          {authVisual ?? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={AUTH_PHOTO}
-              alt=""
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          )}
-          <Link
-            href="/"
-            className="absolute top-7 left-8 flex items-center gap-2.5 rounded-[10px] bg-bg/90 px-3 py-2 text-[19px] font-semibold tracking-[-0.02em] text-ink no-underline"
-          >
-            <LogoMark />
-            Carrip
-          </Link>
-        </div>
-        <div className="flex flex-col">
-          <div className="flex min-h-14 items-center px-5 md:hidden">
-            <Link
-              href="/"
-              className="flex items-center gap-2.5 text-[19px] font-semibold text-ink no-underline"
-            >
-              <LogoMark />
-              Carrip
-            </Link>
+      <div className="flex min-h-dvh flex-col">
+        <SiteHeader email={email} showLogout={showLogout} />
+        <main className="mx-auto flex w-full max-w-[1040px] flex-1 flex-col gap-4 px-5 pt-8 pb-16 md:px-8 md:pt-14 md:pb-20">
+          <div className="flex flex-wrap overflow-hidden rounded-[18px] border border-line bg-surface">
+            <div className="relative hidden min-h-[520px] flex-[1_1_380px] bg-photo-3 md:block">
+              {authVisual ?? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={AUTH_PHOTO} alt="" className="absolute inset-0 h-full w-full object-cover" />
+              )}
+            </div>
+            <div className="flex flex-[1_1_380px] flex-col justify-center gap-5 px-6 py-10 md:px-11 md:py-12">
+              {children}
+            </div>
           </div>
-          <main className="flex flex-1 items-center justify-center px-5 py-10 md:px-10">
-            <div className="w-full max-w-[380px]">{children}</div>
-          </main>
-        </div>
+          <p className="mx-1 my-0 text-[13px] text-muted">
+            ルートの確認だけならログインは不要です。
+            <Link href="/" className="font-medium">
+              トップへ戻る
+            </Link>
+          </p>
+        </main>
       </div>
     )
   }

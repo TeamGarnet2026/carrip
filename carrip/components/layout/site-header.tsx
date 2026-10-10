@@ -30,25 +30,25 @@ const SITE_NAV = [
   {
     href: '/trips',
     label: 'マイプラン',
-    // ログイン画面は「マイプラン」から誘導されるため、同じ項目を選択中として表示する
-    match: (path: string) =>
-      path.startsWith('/trips') || path === '/login' || path === '/signup',
+    match: (path: string) => path.startsWith('/trips'),
   },
 ]
 
-function Brand() {
+function Brand({ large = false }: { large?: boolean }) {
   return (
     <Link
       href="/"
-      className="flex items-center gap-2.5 text-[19px] font-semibold tracking-[-0.02em] text-ink no-underline"
+      className={`flex items-center gap-2.5 font-semibold tracking-[-0.02em] text-ink no-underline ${
+        large ? 'text-xl' : 'text-[19px]'
+      }`}
     >
-      <LogoMark />
+      <LogoMark size={large ? 26 : 24} />
       Carrip
     </Link>
   )
 }
 
-function AccountArea({ email, showLogout }: SiteHeaderProps) {
+function AccountArea({ email, showLogout, pathname }: SiteHeaderProps & { pathname: string }) {
   if (email) {
     return (
       <div className="ml-auto flex items-center gap-4">
@@ -57,6 +57,18 @@ function AccountArea({ email, showLogout }: SiteHeaderProps) {
         </span>
         {showLogout && <LogoutButton />}
       </div>
+    )
+  }
+  // ログイン画面では新規登録へ、新規登録画面ではログインへのボタンを出す
+  if (pathname === '/login' || pathname === '/signup') {
+    const toSignup = pathname === '/login'
+    return (
+      <Link
+        href={toSignup ? '/signup' : '/login'}
+        className="ml-auto inline-flex min-h-10 items-center rounded-[10px] border border-line-strong bg-surface px-[18px] text-sm font-medium text-ink no-underline hover:bg-soft"
+      >
+        {toSignup ? '新規登録' : 'ログイン'}
+      </Link>
     )
   }
   return (
@@ -77,8 +89,12 @@ export function SiteHeader({ email, showLogout }: SiteHeaderProps) {
   return (
     <header className="border-b border-line bg-bg">
       {/* PC: ロゴ + 進行状況（旅程づくり中）またはメニュー + アカウント */}
-      <div className="hidden min-h-16 flex-wrap items-center gap-x-8 gap-y-3 px-8 md:flex">
-        <Brand />
+      <div
+        className={`hidden flex-wrap items-center gap-y-3 px-8 md:flex ${
+          step != null ? 'min-h-16 gap-x-8' : 'mx-auto min-h-[68px] max-w-[1240px] gap-x-10'
+        }`}
+      >
+        <Brand large={step == null} />
         {step != null ? (
           <ol
             aria-label="進行状況"
@@ -102,7 +118,7 @@ export function SiteHeader({ email, showLogout }: SiteHeaderProps) {
             })}
           </ol>
         ) : (
-          <nav aria-label="メインメニュー" className="flex gap-6 text-sm">
+          <nav aria-label="メインメニュー" className="flex gap-7 text-sm font-medium">
             {SITE_NAV.map((item) => {
               const active = item.match(pathname)
               return (
@@ -123,7 +139,7 @@ export function SiteHeader({ email, showLogout }: SiteHeaderProps) {
             })}
           </nav>
         )}
-        <AccountArea email={email} showLogout={showLogout} />
+        <AccountArea email={email} showLogout={showLogout} pathname={pathname} />
       </div>
 
       {/* スマホ: 旅程づくり中は「戻る + ステップ」、それ以外はロゴ + ログイン */}
@@ -145,7 +161,7 @@ export function SiteHeader({ email, showLogout }: SiteHeaderProps) {
         ) : (
           <>
             <Brand />
-            <AccountArea email={email} showLogout={showLogout} />
+            <AccountArea email={email} showLogout={showLogout} pathname={pathname} />
           </>
         )}
       </div>

@@ -23,8 +23,7 @@ const TABS: Array<{
     href: '/trips',
     label: 'マイプラン',
     icon: BookmarkIcon,
-    match: (path) =>
-      path.startsWith('/trips') || path === '/login' || path === '/signup',
+    match: (path) => path.startsWith('/trips'),
   },
 ]
 
