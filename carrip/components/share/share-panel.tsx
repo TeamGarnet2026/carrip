@@ -1,5 +1,6 @@
 'use client'
 
+import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,7 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
   const [error, setError] = useState<string | null>(null)
   const [share, setShare] = useState<ShareResponse | null>(null)
   const [copied, setCopied] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
 
   useEffect(() => {
     async function createShare() {
@@ -54,6 +56,22 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
     void createShare()
   }, [planId, routeId])
 
+  // 共有URLを外部サービスに送らないよう、QRコードはブラウザ内で生成する
+  useEffect(() => {
+    if (!share) return
+    let cancelled = false
+    QRCode.toDataURL(share.share_url, { width: 360, margin: 1 })
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl)
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [share])
+
   async function handleCopy() {
     if (!share) return
     await navigator.clipboard.writeText(share.share_url)
@@ -85,8 +103,6 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
 
   if (!share) return null
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(share.share_url)}`
-
   return (
     <div className="space-y-6 rounded-xl border border-neutral-200 p-6 dark:border-neutral-800">
       <div>
@@ -104,13 +120,32 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
       </div>
 
       <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
-        <img
-          src={qrUrl}
-          alt="共有URLのQRコード"
-          width={180}
-          height={180}
-          className="rounded-lg border border-neutral-200 dark:border-neutral-800"
-        />
+        <div className="flex flex-col items-center gap-2">
+          {qrDataUrl ? (
+            // data URL のため next/image の最適化対象外
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={qrDataUrl}
+              alt="共有URLのQRコード"
+              width={180}
+              height={180}
+              className="rounded-lg border border-neutral-200 dark:border-neutral-800"
+            />
+          ) : (
+            <div className="grid h-[180px] w-[180px] place-items-center rounded-lg border border-dashed border-neutral-300 text-xs text-neutral-500">
+              QRコードを生成中…
+            </div>
+          )}
+          {qrDataUrl && (
+            <a
+              href={qrDataUrl}
+              download={`carrip-share-${share.short_code}.png`}
+              className="text-[13px] font-bold text-brand-dark underline-offset-4 hover:underline"
+            >
+              QRコードをダウンロード
+            </a>
+          )}
+        </div>
         <div className="space-y-3">
           <Badge variant="warning" label="7日間有効" />
           <p className="text-sm text-neutral-600 dark:text-neutral-400">
