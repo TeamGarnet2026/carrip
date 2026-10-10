@@ -4,47 +4,62 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --color-ink: #0f172a;
-  --color-muted: #64748b;
-  --color-line: #e2e8f0;
-  --color-bg: #f4f6f9;
+  /* デザイン（design-mockups）のトークン */
+  --color-ink: #1b1d1c;
+  --color-ink-soft: #3b3f3c;
+  --color-muted: #5d615e;
+  --color-line: #e2e2dc;
+  --color-line-strong: #cfcfc7;
+  --color-bg: #f3f3f0;
   --color-surface: #ffffff;
-  --color-soft: #f8fafc;
-  --color-brand: #0f8a7e;
-  --color-brand-dark: #0b6e65;
-  --color-brand-soft: #e8f6f3;
-  --color-accent: #f59e0b;
-  --color-sidebar: #ffffff;
+  --color-soft: #f6f6f3;
+  --color-sunken: #ecece6;
+  --color-segment: #e6e6e0;
+  --color-brand: #2f4a3f;
+  --color-brand-dark: #22362e;
+  --color-brand-soft: #e4eae5;
+  --color-brand-tint: #f4f7f4;
+  --color-accent: #c9a44c;
 
-  /* 既存コンポーネントの teal / neutral クラスをブランドカラー・クールグレーに揃える */
-  --color-teal-50: #effaf7;
-  --color-teal-100: #d3f1ea;
-  --color-teal-200: #a9e3d6;
-  --color-teal-300: #74cdbd;
-  --color-teal-400: #3fb2a1;
-  --color-teal-500: #1c9a8b;
-  --color-teal-600: #0f8a7e;
-  --color-teal-700: #0b6e65;
-  --color-teal-800: #0d5751;
-  --color-teal-900: #0f4843;
-  --color-teal-950: #032a27;
-  --color-neutral-50: #f8fafc;
-  --color-neutral-100: #f1f5f9;
-  --color-neutral-200: #e2e8f0;
-  --color-neutral-300: #cbd5e1;
-  --color-neutral-400: #94a3b8;
-  --color-neutral-500: #64748b;
-  --color-neutral-600: #475569;
-  --color-neutral-700: #334155;
-  --color-neutral-800: #1e293b;
-  --color-neutral-900: #0f172a;
-  --color-neutral-950: #020617;
+  /* 費用4項目の色 */
+  --color-cost-fuel: #c9a44c;
+  --color-cost-toll: #2f4a3f;
+  --color-cost-parking: #7088a8;
+  --color-cost-admission: #b5654a;
 
-  --font-sans: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif;
-  --radius-card: 16px;
-  --radius-control: 10px;
-  --shadow-carrip: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
-  --shadow-raised: 0 2px 4px rgba(15, 23, 42, 0.05), 0 16px 40px rgba(15, 23, 42, 0.1);
+  /* 写真の代わりに置く色面 */
+  --color-photo-1: #c9c1b4;
+  --color-photo-2: #c3c9bd;
+  --color-photo-3: #bec6c9;
+  --color-photo-4: #bfc6bc;
+
+  /* 既存コンポーネントの teal / neutral クラスを新しい配色に揃える */
+  --color-teal-50: #f4f7f4;
+  --color-teal-100: #e4eae5;
+  --color-teal-200: #c8d4cb;
+  --color-teal-300: #9fb3a6;
+  --color-teal-400: #6d8a7b;
+  --color-teal-500: #4a6a5b;
+  --color-teal-600: #2f4a3f;
+  --color-teal-700: #2f4a3f;
+  --color-teal-800: #22362e;
+  --color-teal-900: #1a2a24;
+  --color-teal-950: #0f1a16;
+  --color-neutral-50: #f6f6f3;
+  --color-neutral-100: #ecece6;
+  --color-neutral-200: #e2e2dc;
+  --color-neutral-300: #cfcfc7;
+  --color-neutral-400: #a9ada6;
+  --color-neutral-500: #5d615e;
+  --color-neutral-600: #4a4e4b;
+  --color-neutral-700: #3b3f3c;
+  --color-neutral-800: #2a2d2b;
+  --color-neutral-900: #1b1d1c;
+  --color-neutral-950: #111211;
+
+  --font-sans: var(--font-geist), var(--font-noto-sans-jp), "Hiragino Sans", "Yu Gothic UI", Meiryo, system-ui, sans-serif;
+  --shadow-carrip: 0 1px 2px rgba(27, 29, 28, 0.04);
+  --shadow-raised: 0 10px 40px rgba(27, 29, 28, 0.12);
   --animate-carrip-spin: carrip-spin 1s linear infinite;
 }
 
@@ -61,13 +76,18 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-feature-settings: "palt";
-    letter-spacing: 0.01em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+  }
+
   ::selection {
-    background: var(--color-teal-100);
+    background: var(--color-brand-soft);
   }
 
   :focus-visible {
@@ -95,8 +115,8 @@
 
   input::placeholder,
   textarea::placeholder {
-    color: #94a3b8 !important;
-    -webkit-text-fill-color: #94a3b8;
+    color: #8b8f8b !important;
+    -webkit-text-fill-color: #8b8f8b;
     opacity: 1;
   }
 
@@ -120,253 +140,48 @@
 }
 
 @layer components {
-  .carrip-app {
+  /* ページ本文の幅（モックアップ: 最大 1240px・左右 32px） */
+  .carrip-container {
     width: 100%;
-    min-height: 100dvh;
-    display: grid;
-    grid-template-columns: 252px minmax(0, 1fr);
-  }
-
-  .carrip-main {
-    min-width: 0;
-    min-height: 100dvh;
-    display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .carrip-topbar {
-    position: sticky;
-    top: 0;
-    z-index: 20;
-    min-height: 72px;
-    background: rgba(255, 255, 255, 0.94);
-    backdrop-filter: saturate(180%) blur(14px);
-    -webkit-backdrop-filter: saturate(180%) blur(14px);
-    border-bottom: 1px solid var(--color-line);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 18px;
-    padding: 14px 32px;
-  }
-
-  .carrip-workspace {
-    min-height: 0;
-    /* 横幅の広い画面では本文を最大 1136px に収める */
-    padding: 28px max(32px, calc((100% - 1136px) / 2)) 40px;
-    overflow: auto;
-  }
-
-  .carrip-sidebar {
-    position: sticky;
-    top: 0;
-    height: 100dvh;
-    background: var(--color-sidebar);
-    border-right: 1px solid var(--color-line);
-    color: var(--color-ink);
-    padding: 22px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 28px;
-  }
-
-  .carrip-brand {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0 8px;
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.01em;
-    color: var(--color-ink);
-    text-decoration: none;
-  }
-
-  .carrip-brand-mark {
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
-    background: linear-gradient(135deg, #1fb5a3 0%, var(--color-brand) 55%, var(--color-brand-dark) 100%);
-    display: grid;
-    place-items: center;
-    color: #ffffff;
-    box-shadow: 0 6px 16px rgba(15, 138, 126, 0.3);
-    font-size: 18px;
-  }
-
-  .carrip-brand-mark svg {
-    width: 58%;
-    height: 58%;
-  }
-
-  .carrip-nav {
-    display: grid;
-    gap: 4px;
-  }
-
-  .carrip-nav-link {
-    position: relative;
-    width: 100%;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
-    border-radius: var(--radius-control);
-    color: var(--color-muted);
-    background: transparent;
-    text-decoration: none;
-    font-size: 14px;
-    font-weight: 700;
-    transition:
-      background 0.15s ease,
-      color 0.15s ease;
-  }
-
-  .carrip-nav-link svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-  }
-
-  .carrip-nav-link:hover {
-    color: var(--color-ink);
-    background: var(--color-soft);
-  }
-
-  .carrip-nav-link.active {
-    color: var(--color-brand-dark);
-    background: var(--color-brand-soft);
-  }
-
-  .carrip-trip-note {
-    margin-top: auto;
-    padding: 16px;
-    border-radius: 14px;
-    background: linear-gradient(160deg, var(--color-brand-soft), #f5fbfa);
-    border: 1px solid var(--color-teal-100);
-    font-size: 12px;
-    line-height: 1.7;
-    color: var(--color-muted);
-    overflow-wrap: anywhere;
-  }
-
-  .carrip-trip-note b {
-    display: block;
-    margin-bottom: 6px;
-    font-size: 13px;
-    color: var(--color-ink);
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 36px 32px 64px;
   }
 
   .carrip-panel {
     background: var(--color-surface);
     border: 1px solid var(--color-line);
-    border-radius: var(--radius-card);
-    box-shadow: var(--shadow-carrip);
+    border-radius: 16px;
   }
 
-  /* トップ画面のメインビジュアル（ワークスペース内のカードとして表示） */
-  .carrip-hero {
+  /* 写真の代わりの色面（実写真がない箇所） */
+  .carrip-photo {
     position: relative;
     overflow: hidden;
-    display: grid;
-    align-content: end;
-    min-height: 420px;
-    padding: 48px;
-    border-radius: 24px;
-    color: #ffffff;
-    box-shadow: var(--shadow-raised);
-    background:
-      radial-gradient(120% 90% at 0% 100%, rgba(15, 138, 126, 0.6), transparent 60%),
-      linear-gradient(100deg, rgba(2, 6, 23, 0.86) 0%, rgba(2, 6, 23, 0.55) 55%, rgba(2, 6, 23, 0.2) 100%),
-      url("https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80")
-        center / cover;
-  }
-
-  .carrip-glass {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-  }
-
-  /* ログイン・新規登録（左: ビジュアル / 右: フォーム のカード） */
-  .carrip-auth-card {
-    width: min(960px, 100%);
-    margin: 8px auto 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 440px);
-    overflow: hidden;
-    border: 1px solid var(--color-line);
-    border-radius: 24px;
-    background: var(--color-surface);
-    box-shadow: var(--shadow-carrip);
-  }
-
-  .carrip-auth-visual {
-    padding: 40px;
-    color: #ffffff;
-    background:
-      radial-gradient(120% 90% at 0% 100%, rgba(15, 138, 126, 0.6), transparent 60%),
-      linear-gradient(160deg, rgba(2, 6, 23, 0.4), rgba(2, 6, 23, 0.86)),
-      url("https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80")
-        center / cover;
-    display: grid;
-    align-content: end;
-    gap: 16px;
-    min-height: 480px;
-  }
-
-  .carrip-auth-panel {
-    background: var(--color-surface);
-    padding: 40px;
-    display: grid;
-    align-content: center;
-    gap: 24px;
-  }
-
-  .carrip-wizard-card {
-    width: min(760px, 100%);
-    margin: 0 auto;
-    background: var(--color-surface);
-    border: 1px solid var(--color-line);
-    border-radius: var(--radius-card);
-    box-shadow: var(--shadow-carrip);
-    overflow: hidden;
-  }
-
-  .carrip-loading-card {
-    width: min(520px, 100%);
-    padding: 36px;
-    border-radius: var(--radius-card);
-    border: 1px solid var(--color-line);
-    background: var(--color-surface);
-    box-shadow: var(--shadow-carrip);
-    text-align: center;
+    border-radius: 16px;
+    background: var(--color-photo-1);
   }
 
   .carrip-spinner {
     width: 54px;
     height: 54px;
     border-radius: 50%;
-    border: 5px solid var(--color-teal-100);
+    border: 4px solid var(--color-line);
     border-top-color: var(--color-brand);
     animation: carrip-spin 1s linear infinite;
   }
 
-  /* チェックボックス付きの選択肢（選択中は枠と背景をブランドカラーにする） */
+  /* チェックボックス・ラジオ付きの選択肢（選択中は枠と背景を強調） */
   .carrip-option {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    min-height: 52px;
+    gap: 10px;
+    min-height: 48px;
     padding: 12px 16px;
-    border: 1px solid var(--color-line);
-    border-radius: 12px;
+    border: 1px solid var(--color-line-strong);
+    border-radius: 10px;
     background: var(--color-surface);
     font-size: 14px;
-    font-weight: 600;
     cursor: pointer;
     transition:
       border-color 0.15s ease,
@@ -374,12 +189,43 @@
   }
 
   .carrip-option:hover {
-    border-color: var(--color-teal-300);
+    border-color: var(--color-muted);
   }
 
-  .carrip-option:has(input:checked) {
-    border-color: var(--color-brand);
-    background: var(--color-brand-soft);
+  .carrip-option:has(input:checked),
+  .carrip-option[aria-pressed='true'] {
+    border: 1.5px solid var(--color-brand);
+    background: var(--color-brand-tint);
+    font-weight: 600;
+  }
+
+  /* 設定の行（ラベル左・チェック右） */
+  .carrip-toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 56px;
+    border-bottom: 1px solid var(--color-line);
+    font-size: 15px;
+    cursor: pointer;
+  }
+
+  .carrip-toggle-row input[type='checkbox'] {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* 画面下に固定する操作バー */
+  .carrip-bottom-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 20;
+    padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(243, 243, 240, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-top: 1px solid var(--color-line);
   }
 }
 
@@ -403,117 +249,10 @@
   }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 768px) {
   @layer components {
-    .carrip-app {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto minmax(0, 1fr);
-    }
-
-    /* モバイルではブランドを上部バー、ナビゲーションを画面下のタブバーにする */
-    .carrip-sidebar {
-      position: sticky;
-      top: 0;
-      z-index: 30;
-      height: auto;
-      padding: 10px 16px;
-      gap: 0;
-      border-right: 0;
-      border-bottom: 1px solid var(--color-line);
-      background: rgba(255, 255, 255, 0.9);
-      backdrop-filter: saturate(180%) blur(14px);
-      -webkit-backdrop-filter: saturate(180%) blur(14px);
-    }
-
-    .carrip-brand {
-      padding: 0;
-      font-size: 18px;
-    }
-
-    .carrip-brand-mark {
-      width: 32px;
-      height: 32px;
-      border-radius: 10px;
-      font-size: 15px;
-    }
-
-    .carrip-nav {
-      position: fixed;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      z-index: 40;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 0;
-      padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: saturate(180%) blur(14px);
-      -webkit-backdrop-filter: saturate(180%) blur(14px);
-      border-top: 1px solid var(--color-line);
-    }
-
-    .carrip-nav-link {
-      flex-direction: column;
-      justify-content: center;
-      gap: 2px;
-      min-height: 52px;
-      padding: 6px 4px;
-      font-size: 11px;
-    }
-
-    .carrip-nav-link.active {
-      background: transparent;
-    }
-
-    .carrip-nav-link.active::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      width: 28px;
-      height: 3px;
-      border-radius: 999px;
-      background: var(--color-brand);
-    }
-
-    .carrip-trip-note {
-      display: none;
-    }
-
-    .carrip-main {
-      min-height: auto;
-    }
-
-    .carrip-topbar {
-      position: static;
-      min-height: 0;
-      padding: 18px 16px 4px;
-      background: transparent;
-      backdrop-filter: none;
-      -webkit-backdrop-filter: none;
-      border-bottom: 0;
-    }
-
-    .carrip-workspace {
-      padding: 14px 16px calc(88px + env(safe-area-inset-bottom));
-    }
-
-    .carrip-auth-card {
-      grid-template-columns: 1fr;
-      margin-top: 0;
-    }
-
-    .carrip-hero {
-      min-height: 0;
-      padding: 28px 22px;
-      border-radius: 20px;
-    }
-
-    .carrip-auth-visual {
-      display: none;
-    }
-
-    .carrip-auth-panel {
-      padding: 28px 20px;
+    .carrip-container {
+      padding: 20px 20px 40px;
     }
   }
 }

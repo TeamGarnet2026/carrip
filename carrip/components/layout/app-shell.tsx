@@ -1,5 +1,8 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { AppSidebar } from '@/components/layout/app-sidebar'
+import { MobileTabBar } from '@/components/layout/mobile-tab-bar'
+import { SiteHeader } from '@/components/layout/site-header'
+import { LogoMark } from '@/components/ui/icons'
 
 type AppShellVariant = 'app' | 'entry' | 'auth' | 'center'
 
@@ -7,6 +10,8 @@ type AppShellProps = {
   children: ReactNode
   title?: string
   subtitle?: string
+  /** タイトルの上に出す小さな補足（例: 京都駅 出発 · 11月3日（火）· 4人） */
+  eyebrow?: string
   email?: string | null
   showLogout?: boolean
   variant?: AppShellVariant
@@ -14,69 +19,90 @@ type AppShellProps = {
   authVisual?: ReactNode
 }
 
+const AUTH_PHOTO =
+  'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=70&w=1200'
+
 export function AppShell({
   children,
   title,
   subtitle,
+  eyebrow,
   email,
   showLogout = false,
   variant = 'app',
   actions,
   authVisual,
 }: AppShellProps) {
-  // どの画面もサイドバー付きの同じ枠に収め、画面遷移しても別アプリに見えないようにする
-  let content: ReactNode = children
-
+  // ログイン・新規登録は左に写真、右にフォームの全画面レイアウト
   if (variant === 'auth') {
-    content = (
-      <div className="carrip-auth-card">
-        <div className="carrip-auth-visual">
+    return (
+      <div className="grid min-h-dvh bg-bg md:grid-cols-2">
+        <div className="relative hidden overflow-hidden bg-photo-3 md:block">
           {authVisual ?? (
-            <>
-              <p className="carrip-glass m-0 w-fit rounded-full px-3 py-1 text-xs font-bold text-white/90">
-                Carrip アカウント
-              </p>
-              <h2 className="m-0 text-[clamp(24px,2.6vw,32px)] leading-[1.3] font-bold tracking-tight">
-                グループドライブ旅行を、
-                <br />
-                費用込みで計画
-              </h2>
-              <p className="m-0 text-sm leading-[1.9] text-white/80">
-                行きたい場所を選ぶだけで、回る順番と燃料費・高速料金・駐車料・入場料を計算します。
-              </p>
-            </>
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={AUTH_PHOTO}
+              alt=""
+              className="absolute inset-0 h-full w-full object-cover"
+            />
           )}
+          <Link
+            href="/"
+            className="absolute top-7 left-8 flex items-center gap-2.5 rounded-[10px] bg-bg/90 px-3 py-2 text-[19px] font-semibold tracking-[-0.02em] text-ink no-underline"
+          >
+            <LogoMark />
+            Carrip
+          </Link>
         </div>
-        <div className="carrip-auth-panel">{children}</div>
+        <div className="flex flex-col">
+          <div className="flex min-h-14 items-center px-5 md:hidden">
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 text-[19px] font-semibold text-ink no-underline"
+            >
+              <LogoMark />
+              Carrip
+            </Link>
+          </div>
+          <main className="flex flex-1 items-center justify-center px-5 py-10 md:px-10">
+            <div className="w-full max-w-[380px]">{children}</div>
+          </main>
+        </div>
       </div>
     )
-  } else if (variant === 'center') {
-    content = <div className="mx-auto w-full max-w-lg pt-6 sm:pt-12">{children}</div>
   }
 
   return (
-    <div className="carrip-app">
-      <AppSidebar email={email} showLogout={showLogout} />
-      <div className="carrip-main">
-        {(title || subtitle || actions) && (
-          <header className="carrip-topbar">
-            <div>
-              {title && (
-                <h1 className="m-0 text-[22px] leading-tight font-bold tracking-tight text-ink">
-                  {title}
-                </h1>
-              )}
-              {subtitle && (
-                <p className="mt-1 mb-0 text-[13px] leading-normal text-muted">
-                  {subtitle}
-                </p>
-              )}
-            </div>
-            {actions && <div className="flex items-center gap-2">{actions}</div>}
-          </header>
+    <div className="flex min-h-dvh flex-col">
+      <SiteHeader email={email} showLogout={showLogout} />
+      <main className="flex-1">
+        {variant === 'entry' ? (
+          children
+        ) : variant === 'center' ? (
+          <div className="carrip-container flex justify-center">
+            <div className="w-full max-w-lg pt-6 md:pt-16">{children}</div>
+          </div>
+        ) : (
+          <div className="carrip-container flex flex-col gap-7">
+            {(title || subtitle || eyebrow || actions) && (
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div className="flex flex-col gap-2">
+                  {eyebrow && <p className="m-0 text-[13px] text-muted">{eyebrow}</p>}
+                  {title && (
+                    <h1 className="m-0 text-[26px] leading-tight font-bold md:text-[32px]">
+                      {title}
+                    </h1>
+                  )}
+                  {subtitle && <p className="m-0 text-sm text-muted">{subtitle}</p>}
+                </div>
+                {actions && <div className="flex items-center gap-3">{actions}</div>}
+              </div>
+            )}
+            {children}
+          </div>
         )}
-        <div className="carrip-workspace">{content}</div>
-      </div>
+      </main>
+      <MobileTabBar />
     </div>
   )
 }

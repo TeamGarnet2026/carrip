@@ -1,3 +1,5 @@
+import { useId } from 'react'
+
 type InputProps = {
   label?: string
   placeholder?: string
@@ -8,6 +10,8 @@ type InputProps = {
   type?: string
   min?: string
   max?: string
+  /** 入力欄の右端に表示する単位（例: 分） */
+  suffix?: string
   onChange: (value: string) => void
 }
 
@@ -21,40 +25,51 @@ export function Input({
   type = 'text',
   min,
   max,
+  suffix,
   onChange,
 }: InputProps) {
+  const inputId = useId()
+
   return (
     <div>
       {label && (
-        <label className="mb-2 block text-[13px] font-bold text-ink">
+        <label htmlFor={inputId} className="mb-2 block text-sm font-semibold text-ink">
           {label}
         </label>
       )}
-      <input
-        type={type}
-        min={min}
-        max={max}
-        placeholder={placeholder}
-        value={value}
-        disabled={isDisabled}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          colorScheme: 'light',
-          backgroundColor: '#ffffff',
-          color: '#1f2a37',
-          WebkitTextFillColor: '#1f2a37',
-        }}
-        className={`carrip-field min-h-[48px] w-full rounded-xl border px-4 py-2.5 text-[15px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-60 ${
-          errorMessage ? 'border-red-400 focus:border-red-500 focus:ring-red-500/15' : 'border-line'
-        }`}
-      />
+      <div className="relative">
+        <input
+          id={inputId}
+          type={type}
+          min={min}
+          max={max}
+          placeholder={placeholder}
+          value={value}
+          disabled={isDisabled}
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            colorScheme: 'light',
+            backgroundColor: '#ffffff',
+            color: '#1b1d1c',
+            WebkitTextFillColor: '#1b1d1c',
+          }}
+          className={`carrip-field min-h-[52px] w-full rounded-[10px] border px-4 py-2.5 text-base outline-none transition focus:border-ink focus:ring-1 focus:ring-ink disabled:cursor-not-allowed disabled:opacity-55 ${
+            suffix ? 'pr-12' : ''
+          } ${errorMessage ? 'border-cost-admission' : 'border-line-strong'}`}
+        />
+        {suffix && (
+          <span className="pointer-events-none absolute top-1/2 right-4 -translate-y-1/2 text-sm text-muted">
+            {suffix}
+          </span>
+        )}
+      </div>
       {errorMessage && (
-        <p className="mt-1.5 text-[13px] font-medium text-red-600" role="alert">
+        <p className="mt-2 text-[13px] font-medium text-cost-admission" role="alert">
           {errorMessage}
         </p>
       )}
       {helperText && !errorMessage && (
-        <p className="mt-1.5 text-xs text-muted">{helperText}</p>
+        <p className="mt-2 text-[13px] text-muted">{helperText}</p>
       )}
     </div>
   )
