@@ -1,3 +1,5 @@
+import { useId } from 'react'
+
 type InputProps = {
   label?: string
   placeholder?: string
@@ -23,14 +25,17 @@ export function Input({
   max,
   onChange,
 }: InputProps) {
+  const inputId = useId()
+
   return (
     <div>
       {label && (
-        <label className="mb-2 block text-[13px] font-bold text-ink">
+        <label htmlFor={inputId} className="mb-2 block text-[13px] font-bold text-ink">
           {label}
         </label>
       )}
       <input
+        id={inputId}
         type={type}
         min={min}
         max={max}

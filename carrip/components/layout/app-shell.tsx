@@ -75,7 +75,7 @@ export function AppShell({
             {actions && <div className="flex items-center gap-2">{actions}</div>}
           </header>
         )}
-        <div className="carrip-workspace">{content}</div>
+        <main className="carrip-workspace">{content}</main>
       </div>
     </div>
   )
