@@ -189,6 +189,11 @@ function mapStopsForResponse(
         ? (preset.parking_source ?? 'manual')
         : (parking?.source ?? 'estimate'),
       admission_yen_per_person: admissionByPlaceId.get(stop.id) ?? 0,
+      // スコアリング（POI 評価）用に、行き先選択時の Google 評価を引き継ぐ
+      ...(preset?.rating != null ? { rating: preset.rating } : {}),
+      ...(preset?.user_rating_count != null
+        ? { user_rating_count: preset.user_rating_count }
+        : {}),
     }
   })
 }

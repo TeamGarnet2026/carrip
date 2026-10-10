@@ -19,6 +19,7 @@ import {
 import { collectDegradedReasons, type DegradedReason } from '@/lib/routes/degraded'
 import { optimizeStopOrder } from '@/lib/routes/order-stops'
 import type { RouteBuildInput } from '@/lib/routes/schema'
+import { scoreRoutes } from '@/lib/routes/scoring'
 import type {
   RouteGenerateRequest,
   RouteSearchResult,
@@ -159,7 +160,11 @@ export async function buildRoutes(
 
   return {
     generated_at: new Date().toISOString(),
-    routes: results.map((result) => result.route),
+    // 表示順は変えずにスコアだけ付ける（スコア順の表示は別チケット）
+    routes: scoreRoutes(
+      results.map((result) => result.route),
+      request
+    ),
     ...(degraded_reasons.length > 0
       ? { degraded: true, degraded_reasons }
       : {}),
