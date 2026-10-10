@@ -6,7 +6,7 @@ export default function NotFound() {
   return (
     <AppShell variant="center">
       <div className="carrip-panel p-8 text-center">
-        <h1 className="text-2xl font-black text-ink">404</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-ink">404</h1>
         <p className="mt-3 text-muted">
           ページが見つかりません。URLが正しいか確認してください。
         </p>

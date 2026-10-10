@@ -18,7 +18,7 @@ export function PreferenceSelector({ value, onChange }: PreferenceSelectorProps)
 
   return (
     <div>
-      <p className="mb-2 text-sm font-medium">優先軸（複数選択可）</p>
+      <p className="mb-2 text-[13px] font-bold text-ink">優先軸（複数選択可）</p>
       <div className="flex flex-wrap gap-2">
         {PREFERENCE_OPTIONS.map((option) => {
           const selected = value.includes(option.id)
@@ -27,10 +27,10 @@ export function PreferenceSelector({ value, onChange }: PreferenceSelectorProps)
               key={option.id}
               type="button"
               onClick={() => toggle(option.id)}
-              className={`rounded-full border px-3 py-1.5 text-sm transition ${
+              className={`rounded-full border px-4 py-2 text-sm font-bold transition ${
                 selected
-                  ? 'border-teal-600 bg-teal-50 text-teal-800 dark:border-teal-400 dark:bg-teal-950 dark:text-teal-200'
-                  : 'border-neutral-300 hover:border-teal-500 dark:border-neutral-700'
+                  ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(15,138,126,0.25)]'
+                  : 'border-line bg-surface text-ink hover:border-teal-300'
               }`}
             >
               {option.label}

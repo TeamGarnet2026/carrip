@@ -26,7 +26,7 @@ export function Input({
   return (
     <div>
       {label && (
-        <label className="mb-1.5 block text-xs font-extrabold text-muted">
+        <label className="mb-2 block text-[13px] font-bold text-ink">
           {label}
         </label>
       )}
@@ -44,17 +44,17 @@ export function Input({
           color: '#1f2a37',
           WebkitTextFillColor: '#1f2a37',
         }}
-        className={`carrip-field min-h-[42px] w-full rounded-[7px] border px-3 py-2 text-sm outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/20 ${
-          errorMessage ? 'border-red-500' : 'border-line'
+        className={`carrip-field min-h-[48px] w-full rounded-xl border px-4 py-2.5 text-[15px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-60 ${
+          errorMessage ? 'border-red-400 focus:border-red-500 focus:ring-red-500/15' : 'border-line'
         }`}
       />
       {errorMessage && (
-        <p className="mt-1 text-sm text-red-600" role="alert">
+        <p className="mt-1.5 text-[13px] font-medium text-red-600" role="alert">
           {errorMessage}
         </p>
       )}
       {helperText && !errorMessage && (
-        <p className="mt-1 text-xs text-muted">{helperText}</p>
+        <p className="mt-1.5 text-xs text-muted">{helperText}</p>
       )}
     </div>
   )

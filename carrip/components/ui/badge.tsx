@@ -6,17 +6,17 @@ type BadgeProps = {
 }
 
 const variantClasses: Record<BadgeVariant, string> = {
-  info: 'bg-[#e8f4f2] text-brand-dark border-[#cfe6e3]',
-  success: 'bg-[#e8f4f2] text-brand-dark border-[#cfe6e3]',
-  warning: 'bg-[#fff4e5] text-[#9a6700] border-[#f0dfbf]',
-  danger: 'bg-red-50 text-red-800 border-red-200',
-  neutral: 'bg-soft text-ink border-line',
+  info: 'bg-brand-soft text-brand-dark border-teal-100',
+  success: 'bg-emerald-50 text-emerald-700 border-emerald-100',
+  warning: 'bg-amber-50 text-amber-800 border-amber-100',
+  danger: 'bg-red-50 text-red-700 border-red-100',
+  neutral: 'bg-neutral-100 text-neutral-700 border-neutral-200',
 }
 
 export function Badge({ variant = 'neutral', label }: BadgeProps) {
   return (
     <span
-      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-black ${variantClasses[variant]}`}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${variantClasses[variant]}`}
     >
       {label}
     </span>

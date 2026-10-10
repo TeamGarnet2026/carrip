@@ -25,7 +25,7 @@ export default async function ErrorPage({ searchParams }: ErrorPageProps) {
   return (
     <AppShell variant="center">
       <div className="carrip-panel p-8 text-center">
-        <h1 className="text-2xl font-black text-ink">エラー</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-ink">エラー</h1>
         <p className="mt-3 text-muted">{message}</p>
         {params.code && (
           <p className="mt-2 text-xs text-muted">エラーコード: {params.code}</p>

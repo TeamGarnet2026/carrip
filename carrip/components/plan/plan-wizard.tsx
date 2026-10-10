@@ -58,9 +58,11 @@ function validateStep(step: number, form: TripFormValues): Record<string, string
   }
 
   if (step === 3) {
+    const maxDriveMin = form.options.maxDriveMin
+    // 入力欄を空にしている間は NaN になるため、未入力も範囲外として扱う
     if (
-      form.options.maxDriveMin !== 0 &&
-      (form.options.maxDriveMin < 30 || form.options.maxDriveMin > 240)
+      maxDriveMin !== 0 &&
+      (!Number.isFinite(maxDriveMin) || maxDriveMin < 30 || maxDriveMin > 240)
     ) {
       errors.maxDriveMin =
         '連続運転上限は30〜240分、または交代なしを選んでください'
@@ -127,36 +129,57 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
 
   return (
     <div className="carrip-wizard-card">
-      <div className="flex items-center justify-between gap-4 border-b border-line px-5 py-4">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-[#e5ecef]">
-          <span
-            className="block h-full rounded-full bg-brand transition-all"
-            style={{ width: `${(step / 4) * 100}%` }}
-          />
+      <div className="border-b border-line bg-[linear-gradient(180deg,#fbfdfd,#ffffff)] px-5 pt-5 pb-4 sm:px-8">
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <p className="m-0 text-xs font-bold tracking-wider text-brand uppercase">
+            Step {step} / 4
+          </p>
+          <div className="h-1.5 w-32 overflow-hidden rounded-full bg-neutral-100">
+            <span
+              className="block h-full rounded-full bg-brand transition-all duration-300"
+              style={{ width: `${(step / 4) * 100}%` }}
+            />
+          </div>
         </div>
-        <span className="text-[13px] font-extrabold whitespace-nowrap text-muted">
-          ステップ {step} / 4
-        </span>
+        <ol className="m-0 grid list-none grid-cols-4 gap-2 p-0">
+          {PLAN_STEPS.map((item) => {
+            const done = item.step < step
+            const current = item.step === step
+            return (
+              <li
+                key={item.step}
+                aria-current={current ? 'step' : undefined}
+                className="flex min-w-0 items-center gap-2"
+              >
+                <span
+                  className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold transition ${
+                    current
+                      ? 'bg-brand text-white shadow-[0_0_0_4px_rgba(15,138,126,0.15)]'
+                      : done
+                        ? 'bg-brand-soft text-brand-dark'
+                        : 'bg-neutral-100 text-neutral-400'
+                  }`}
+                >
+                  {done ? '✓' : item.step}
+                </span>
+                <span
+                  className={`truncate text-[13px] font-bold ${
+                    current
+                      ? 'text-ink'
+                      : done
+                        ? 'hidden text-brand-dark sm:inline'
+                        : 'hidden text-neutral-400 sm:inline'
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
       </div>
 
-      <ol className="flex flex-wrap gap-2 border-b border-line px-5 py-3">
-        {PLAN_STEPS.map((item) => (
-          <li
-            key={item.step}
-            className={`rounded-full px-3 py-1 text-xs font-extrabold ${
-              item.step === step
-                ? 'bg-brand text-white'
-                : item.step < step
-                  ? 'bg-[#e8f4f2] text-brand-dark'
-                  : 'bg-soft text-muted'
-            }`}
-          >
-            {item.step}. {item.label}
-          </li>
-        ))}
-      </ol>
-
-      <div className="space-y-6 p-6">
+      <div className="space-y-6 px-5 py-6 sm:px-8 sm:py-7">
         {step === 1 && (
           <>
             <Input
@@ -223,7 +246,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
               onChange={(preferences) => updateForm({ preferences })}
             />
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
+              <label className="carrip-option">
                 高速道路を使う
                 <input
                   type="checkbox"
@@ -238,7 +261,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   }
                 />
               </label>
-              <label className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
+              <label className="carrip-option">
                 ETCカードあり
                 <input
                   type="checkbox"
@@ -250,7 +273,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   }
                 />
               </label>
-              <label className="flex items-center justify-between rounded-lg border border-neutral-200 px-3 py-2 text-sm dark:border-neutral-800">
+              <label className="carrip-option">
                 出発地に戻る（往復）
                 <input
                   type="checkbox"
@@ -284,7 +307,8 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   min="30"
                   max="240"
                   value={
-                    form.options.maxDriveMin === 0
+                    form.options.maxDriveMin === 0 ||
+                    !Number.isFinite(form.options.maxDriveMin)
                       ? ''
                       : String(form.options.maxDriveMin)
                   }
@@ -295,10 +319,17 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                   helperText="30〜240分で入力"
                   errorMessage={errors.maxDriveMin}
                   onChange={(raw) => {
+                    // 空欄にして打ち直せるよう、未入力は NaN として保持する。
+                    // 0 は「交代なし」を表すため、手入力の 0 も未入力扱いにする
                     const parsed = Number.parseInt(raw, 10)
-                    if (!Number.isFinite(parsed)) return
                     updateForm({
-                      options: { ...form.options, maxDriveMin: parsed },
+                      options: {
+                        ...form.options,
+                        maxDriveMin:
+                          Number.isFinite(parsed) && parsed !== 0
+                            ? parsed
+                            : Number.NaN,
+                      },
                     })
                   }}
                 />
@@ -313,10 +344,10 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                       },
                     })
                   }}
-                  className={`w-full rounded-[7px] border px-3 py-2 text-sm font-medium transition ${
+                  className={`w-full rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
                     form.options.maxDriveMin === 0
-                      ? 'border-brand bg-brand/10 text-brand'
-                      : 'border-line bg-[#fbfcfd] text-ink hover:border-brand/40'
+                      ? 'border-brand bg-brand-soft text-brand-dark'
+                      : 'border-line bg-surface text-ink hover:border-teal-300'
                   }`}
                 >
                   {form.options.maxDriveMin === 0
@@ -337,13 +368,13 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
         )}
 
         {step === 4 && (
-          <div className="space-y-4 text-sm">
-            <section>
+          <div className="grid gap-3 text-sm">
+            <section className="rounded-xl border border-line bg-soft p-4">
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-semibold">出発地・日程</h2>
+                <h2 className="m-0 text-[13px] font-bold text-muted">出発地・日程</h2>
                 <button
                   type="button"
-                  className="text-teal-700 underline dark:text-teal-400"
+                  className="rounded-lg px-2 py-1 text-[13px] font-bold text-brand transition hover:bg-brand-soft"
                   onClick={() => setStep(1)}
                 >
                   変更
@@ -354,12 +385,12 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                 {form.departureDate} 出発 · {form.days}日間
               </p>
             </section>
-            <section>
+            <section className="rounded-xl border border-line bg-soft p-4">
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-semibold">目的地・人数・車種</h2>
+                <h2 className="m-0 text-[13px] font-bold text-muted">目的地・人数・車種</h2>
                 <button
                   type="button"
-                  className="text-teal-700 underline dark:text-teal-400"
+                  className="rounded-lg px-2 py-1 text-[13px] font-bold text-brand transition hover:bg-brand-soft"
                   onClick={() => setStep(2)}
                 >
                   変更
@@ -370,12 +401,12 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
                 {form.people}人 · {vehicleLabel(form.vehicle.type)}
               </p>
             </section>
-            <section>
+            <section className="rounded-xl border border-line bg-soft p-4">
               <div className="mb-2 flex items-center justify-between">
-                <h2 className="font-semibold">詳細設定</h2>
+                <h2 className="m-0 text-[13px] font-bold text-muted">詳細設定</h2>
                 <button
                   type="button"
-                  className="text-teal-700 underline dark:text-teal-400"
+                  className="rounded-lg px-2 py-1 text-[13px] font-bold text-brand transition hover:bg-brand-soft"
                   onClick={() => setStep(3)}
                 >
                   変更
@@ -412,7 +443,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
         )}
       </div>
 
-      <div className="flex justify-between gap-3 border-t border-line px-5 py-4">
+      <div className="flex justify-between gap-3 border-t border-line bg-soft px-5 py-4 sm:px-8">
         {step > 1 ? (
           <Button variant="secondary" onClick={handleBack}>
             戻る

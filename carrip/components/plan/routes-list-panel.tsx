@@ -31,7 +31,7 @@ const RoutesMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[380px] items-center justify-center rounded border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
+      <div className="flex h-[380px] items-center justify-center rounded-lg border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
         地図を読み込み中…
       </div>
     ),
@@ -302,7 +302,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
 
   if (loading || (!result && !error)) {
     return (
-      <div className="flex flex-col items-center gap-6 py-16">
+      <div className="carrip-loading-card mx-auto mt-6 flex flex-col items-center gap-6">
         <Spinner size="lg" label="ルートを計算中" />
         <p className="text-sm text-neutral-600 dark:text-neutral-400">
           {generatingMode === 'stub'
@@ -316,8 +316,8 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
 
   if (error || !result) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/40">
-        <p className="font-medium text-red-800 dark:text-red-200">{error}</p>
+      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/40">
+        <p className="m-0 font-bold text-red-700 dark:text-red-200">{error}</p>
         <div className="mt-4 flex flex-wrap gap-3">
           <Button onClick={() => void generateRoutes('live')}>もう一度計算する</Button>
           <Link href={`/plan/${planId}/spots`}>
@@ -348,7 +348,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
     <div className="space-y-6">
       {overBudget && (
         <div
-          className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
+          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
           role="alert"
         >
           設定した予算（1人あたり {budgetPerPerson!.toLocaleString('ja-JP')}円）を超過しています。
@@ -363,7 +363,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+        <p className="m-0 text-sm font-bold text-neutral-600 dark:text-neutral-400">
           {sortedRoutes.length}ルート · {originLabel} 出発
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -378,16 +378,21 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-2 text-sm">
+      <div
+        className="ml-auto flex w-fit flex-wrap items-center gap-1 rounded-xl bg-neutral-100 p-1 text-sm"
+        role="group"
+        aria-label="並び替え"
+      >
         {(['score', 'cost', 'time'] as SortKey[]).map((key) => (
           <button
             key={key}
             type="button"
             onClick={() => setSortKey(key)}
-            className={`rounded-full px-3 py-1 ${
+            aria-pressed={sortKey === key}
+            className={`rounded-lg px-4 py-1.5 font-bold transition ${
               sortKey === key
-                ? 'bg-teal-700 text-white dark:bg-teal-500 dark:text-neutral-950'
-                : 'border border-neutral-300 dark:border-neutral-700'
+                ? 'bg-surface text-brand-dark shadow-[0_1px_3px_rgba(15,23,42,0.12)]'
+                : 'text-muted hover:text-ink'
             }`}
           >
             {key === 'score' ? 'おすすめ' : key === 'cost' ? '安い順' : '早い順'}
@@ -395,7 +400,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
         ))}
       </div>
 
-      <div className="space-y-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sortedRoutes.map((route, index) => (
           <RouteCard
             key={route.id}
@@ -422,7 +427,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
       {selectedCostDiff && (
         <div
           role="status"
-          className={`rounded-lg border px-4 py-2 text-sm font-medium ${
+          className={`rounded-xl border px-4 py-3 text-sm font-bold ${
             selectedCostDiff.total > 0
               ? 'border-red-300 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200'
               : selectedCostDiff.total < 0
@@ -455,7 +460,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
         />
       )}
 
-      <div className="flex flex-wrap gap-3">
+      <div className="sticky bottom-3 z-10 flex flex-wrap justify-end gap-3 rounded-2xl border border-line bg-white/90 p-3 shadow-[var(--shadow-raised)] backdrop-blur max-[960px]:bottom-[84px]">
         <Link href={`/plan/${planId}/confirmed`}>
           <Button>このルートを選ぶ</Button>
         </Link>

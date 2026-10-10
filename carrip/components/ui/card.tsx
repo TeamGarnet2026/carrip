@@ -21,15 +21,15 @@ export function Card({
     <Component
       type={isClickable ? 'button' : undefined}
       onClick={onClick}
-      className={`rounded-lg border p-4 text-left transition ${
+      className={`w-full rounded-2xl border p-5 text-left transition duration-200 ${
         isSelected
-          ? 'border-brand ring-2 ring-brand/20'
-          : 'border-line'
+          ? 'border-brand bg-[linear-gradient(180deg,var(--color-brand-soft),#ffffff_45%)] ring-4 ring-brand/12'
+          : 'border-line bg-surface'
       } ${
         isClickable
-          ? 'cursor-pointer hover:border-brand/60 hover:shadow-[var(--shadow)]'
+          ? 'cursor-pointer hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[var(--shadow-raised)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25'
           : ''
-      } bg-surface shadow-[var(--shadow-carrip)] ${className}`}
+      } shadow-[var(--shadow-carrip)] ${className}`}
     >
       {children}
     </Component>

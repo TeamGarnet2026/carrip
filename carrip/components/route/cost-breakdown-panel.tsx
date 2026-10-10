@@ -43,15 +43,15 @@ export function CostBreakdownPanel({
   const total = breakdown.fuel + breakdown.toll + breakdown.parking + breakdown.admission
   const sourceInfo = sources ? describeCostSources(sources) : null
   const items = [
-    { key: 'fuel' as const, label: '燃料費', value: breakdown.fuel, color: 'bg-amber-400' },
-    { key: 'toll' as const, label: '高速', value: breakdown.toll, color: 'bg-sky-400' },
-    { key: 'parking' as const, label: '駐車', value: breakdown.parking, color: 'bg-violet-400' },
-    { key: 'admission' as const, label: '入場', value: breakdown.admission, color: 'bg-emerald-400' },
+    { key: 'fuel' as const, label: '燃料費', value: breakdown.fuel, color: 'bg-amber-400', dot: 'bg-amber-400' },
+    { key: 'toll' as const, label: '高速', value: breakdown.toll, color: 'bg-sky-400', dot: 'bg-sky-400' },
+    { key: 'parking' as const, label: '駐車', value: breakdown.parking, color: 'bg-violet-400', dot: 'bg-violet-400' },
+    { key: 'admission' as const, label: '入場', value: breakdown.admission, color: 'bg-emerald-400', dot: 'bg-emerald-400' },
   ]
 
   return (
     <div className={compact ? 'space-y-2' : 'space-y-3'}>
-      <div className="flex h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+      <div className="flex h-2 gap-0.5 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
         {items.map((item) => (
           <div
             key={item.label}
@@ -67,6 +67,7 @@ export function CostBreakdownPanel({
           return (
             <li key={item.label} className="flex items-center justify-between gap-2">
               <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
+                <span className={`h-2 w-2 shrink-0 rounded-full ${item.dot}`} aria-hidden />
                 {item.label}
                 {!compact && source && (
                   <span
@@ -82,7 +83,7 @@ export function CostBreakdownPanel({
                     {formatYenDelta(diff[item.key])}
                   </span>
                 )}
-                {formatYen(item.value)}
+                <span className="font-semibold text-ink tabular-nums">{formatYen(item.value)}</span>
               </span>
             </li>
           )

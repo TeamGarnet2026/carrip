@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState, type PointerEvent } from 'react'
 import { OpenInGoogleMapsLink } from '@/components/maps/open-in-google-maps-link'
 import { RoundTripLegend } from '@/components/maps/round-trip-legend'
 import { CostBreakdownPanel } from '@/components/route/cost-breakdown-panel'
@@ -19,6 +19,7 @@ import {
   formatYenDelta,
   type CostDiff,
 } from '@/lib/routes/cost-diff'
+import { moveItem } from '@/lib/routes/reorder-stops'
 import type { RouteCandidate, RouteStop } from '@/lib/routes/types'
 
 type RouteDetailPanelProps = {
@@ -52,6 +53,9 @@ export function RouteDetailPanel({
   costDiff = null,
 }: RouteDetailPanelProps) {
   const [showAddList, setShowAddList] = useState(false)
+  const [dragFrom, setDragFrom] = useState<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
+  const stopItemRefs = useRef<(HTMLLIElement | null)[]>([])
 
   const canEdit = editable && onStopsChange != null && !recalculating
   const roundTrip = isRoundTripRoute(route)
@@ -65,9 +69,47 @@ export function RouteDetailPanel({
     const target = stopIndex + direction
     if (target < 0 || target >= route.stops.length) return
 
-    const stops = [...route.stops]
-    ;[stops[stopIndex], stops[target]] = [stops[target], stops[stopIndex]]
-    onStopsChange!(stops, true)
+    onStopsChange!(moveItem(route.stops, stopIndex, target), true)
+  }
+
+  // ポインターイベントで実装し、マウスとタッチ（スマートフォン）の両方でドラッグできるようにする
+  function handleDragStart(event: PointerEvent<HTMLElement>, stopIndex: number) {
+    if (!canEdit || route.stops.length <= 1) return
+    event.preventDefault()
+    event.currentTarget.setPointerCapture(event.pointerId)
+    setDragFrom(stopIndex)
+    setDragOver(stopIndex)
+  }
+
+  function handleDragMove(event: PointerEvent<HTMLElement>) {
+    if (dragFrom == null) return
+    const rects = stopItemRefs.current
+      .slice(0, route.stops.length)
+      .map((item) => item?.getBoundingClientRect())
+    const y = event.clientY
+
+    let over = rects.findIndex(
+      (rect) => rect != null && y >= rect.top && y <= rect.bottom
+    )
+    if (over < 0) {
+      const firstTop = rects[0]?.top ?? 0
+      over = y < firstTop ? 0 : route.stops.length - 1
+    }
+    if (over !== dragOver) setDragOver(over)
+  }
+
+  function handleDragEnd() {
+    const from = dragFrom
+    const to = dragOver
+    setDragFrom(null)
+    setDragOver(null)
+    if (!canEdit || from == null || to == null || from === to) return
+    onStopsChange!(moveItem(route.stops, from, to), true)
+  }
+
+  function handleDragCancel() {
+    setDragFrom(null)
+    setDragOver(null)
   }
 
   function removeStop(stopIndex: number) {
@@ -98,17 +140,17 @@ export function RouteDetailPanel({
   )
 
   return (
-    <div className="rounded border border-neutral-200 p-4 dark:border-neutral-800">
+    <div className="rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-carrip)] sm:p-6">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <p className="font-medium">
+        <p className="m-0 text-lg font-bold text-ink">
           {showIndexLabel ? `案${index + 1}: ` : ''}
           {route.title}
         </p>
-        <span className="rounded bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
+        <span className="rounded-lg bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
           🚗 車移動のみ
         </span>
         {roundTrip && (
-          <span className="rounded bg-teal-100 px-2 py-0.5 text-xs text-teal-800 dark:bg-teal-950 dark:text-teal-200">
+          <span className="rounded-lg bg-teal-100 px-2 py-0.5 text-xs text-teal-800 dark:bg-teal-950 dark:text-teal-200">
             往復
           </span>
         )}
@@ -130,8 +172,8 @@ export function RouteDetailPanel({
       )}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded bg-neutral-50 p-3 text-sm dark:bg-neutral-900">
-          <p className="mb-2 font-medium">費用内訳</p>
+        <div className="rounded-xl bg-soft p-4 text-sm dark:bg-neutral-900">
+          <p className="mt-0 mb-3 text-[13px] font-bold text-muted">費用内訳</p>
           <CostBreakdownPanel
             breakdown={route.cost_breakdown}
             people={people}
@@ -139,8 +181,8 @@ export function RouteDetailPanel({
             diff={costDiff}
           />
         </div>
-        <div className="rounded bg-neutral-50 p-3 text-sm dark:bg-neutral-900">
-          <p className="mb-2 font-medium">走行概要</p>
+        <div className="rounded-xl bg-soft p-4 text-sm dark:bg-neutral-900">
+          <p className="mt-0 mb-3 text-[13px] font-bold text-muted">走行概要</p>
           <ul className="space-y-1 text-neutral-600 dark:text-neutral-400">
             <li>総距離: {route.total_distance_km} km</li>
             {legDurations ? (
@@ -172,7 +214,7 @@ export function RouteDetailPanel({
       {route.stops.length > 0 && (
         <div className="mt-4">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-medium">立ち寄り地点</p>
+            <p className="m-0 text-[13px] font-bold text-muted">立ち寄り地点</p>
             {editable && availableToAdd.length > 0 && (
               <button
                 type="button"
@@ -186,7 +228,7 @@ export function RouteDetailPanel({
           </div>
 
           {showAddList && (
-            <ul className="mb-3 space-y-1 rounded border border-dashed border-neutral-300 p-2 text-sm dark:border-neutral-700">
+            <ul className="mb-3 space-y-1 rounded-lg border border-dashed border-neutral-300 p-2 text-sm dark:border-neutral-700">
               {availableToAdd.map((candidate) => (
                 <li
                   key={candidate.place_id}
@@ -199,7 +241,7 @@ export function RouteDetailPanel({
                     type="button"
                     disabled={!canEdit}
                     onClick={() => addStop(candidate)}
-                    className="rounded border border-teal-600 px-2 py-0.5 text-xs text-teal-700 disabled:opacity-50 dark:border-teal-400 dark:text-teal-400"
+                    className="rounded-lg border border-teal-600 px-2 py-0.5 text-xs text-teal-700 disabled:opacity-50 dark:border-teal-400 dark:text-teal-400"
                   >
                     追加
                   </button>
@@ -230,11 +272,38 @@ export function RouteDetailPanel({
                 stop.is_rest_stop
               )
               const stopLeg = stopLegs[stopIndex]
+              const isDragging = dragFrom === stopIndex
+              const isDropTarget =
+                dragFrom != null && dragOver === stopIndex && dragFrom !== stopIndex
               return (
                 <li
                   key={stop.place_id}
-                  className="flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-2 last:border-0 dark:border-neutral-900"
+                  ref={(element) => {
+                    stopItemRefs.current[stopIndex] = element
+                  }}
+                  className={`flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-2 last:border-0 dark:border-neutral-900 ${
+                    isDragging ? 'opacity-50' : ''
+                  } ${
+                    isDropTarget
+                      ? 'rounded bg-teal-50 ring-2 ring-teal-500 dark:bg-teal-950/40'
+                      : ''
+                  }`}
                 >
+                  {editable && (
+                    <button
+                      type="button"
+                      aria-label={`${stop.name}をドラッグして並び替え`}
+                      title="ドラッグして並び替え"
+                      disabled={!canEdit || route.stops.length <= 1}
+                      onPointerDown={(event) => handleDragStart(event, stopIndex)}
+                      onPointerMove={handleDragMove}
+                      onPointerUp={handleDragEnd}
+                      onPointerCancel={handleDragCancel}
+                      className="flex h-8 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-base text-neutral-400 hover:bg-neutral-100 active:cursor-grabbing disabled:cursor-default disabled:opacity-30 dark:hover:bg-neutral-800"
+                    >
+                      ⠿
+                    </button>
+                  )}
                   <OrderBadge
                     kind="stop"
                     index={
@@ -247,7 +316,7 @@ export function RouteDetailPanel({
                   <span>{stop.name}</span>
                   {roundTrip && stopLeg && (
                     <span
-                      className={`rounded px-1.5 py-0.5 text-xs ${
+                      className={`rounded-lg px-1.5 py-0.5 text-xs ${
                         stopLeg === 'return'
                           ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
                           : 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300'
@@ -257,7 +326,7 @@ export function RouteDetailPanel({
                     </span>
                   )}
                   {label && (
-                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+                    <span className="rounded-lg bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
                       {label}
                     </span>
                   )}
@@ -281,7 +350,7 @@ export function RouteDetailPanel({
                             updateParking(stopIndex, value)
                           }
                         }}
-                        className="w-20 rounded border border-neutral-300 px-1.5 py-0.5 text-right text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                        className="w-20 rounded-lg border border-neutral-300 px-1.5 py-0.5 text-right text-xs dark:border-neutral-700 dark:bg-neutral-900"
                       />
                       円
                       {stop.parking_source === 'manual' && (
@@ -299,7 +368,7 @@ export function RouteDetailPanel({
                         aria-label="上へ移動"
                         disabled={!canEdit || stopIndex === 0}
                         onClick={() => moveStop(stopIndex, -1)}
-                        className="rounded border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
+                        className="rounded-lg border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
                       >
                         ↑
                       </button>
@@ -308,7 +377,7 @@ export function RouteDetailPanel({
                         aria-label="下へ移動"
                         disabled={!canEdit || stopIndex === route.stops.length - 1}
                         onClick={() => moveStop(stopIndex, 1)}
-                        className="rounded border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
+                        className="rounded-lg border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
                       >
                         ↓
                       </button>
@@ -317,7 +386,7 @@ export function RouteDetailPanel({
                         aria-label="削除"
                         disabled={!canEdit || route.stops.length <= 1}
                         onClick={() => removeStop(stopIndex)}
-                        className="rounded border border-red-300 px-1.5 py-0.5 text-xs text-red-600 disabled:opacity-30 dark:border-red-900 dark:text-red-400"
+                        className="rounded-lg border border-red-300 px-1.5 py-0.5 text-xs text-red-600 disabled:opacity-30 dark:border-red-900 dark:text-red-400"
                       >
                         ✕
                       </button>
@@ -339,7 +408,7 @@ export function RouteDetailPanel({
 
           {editable && (
             <p className="mt-2 text-xs text-neutral-500">
-              並び替え・削除・追加でルートと費用を自動で再計算します。駐車料金は実際の料金がわかったら上書きできます。
+              ⠿ をドラッグ（または ↑↓）して並び替えられます。並び替え・削除・追加でルートと費用を自動で再計算します。駐車料金は実際の料金がわかったら上書きできます。
             </p>
           )}
 
