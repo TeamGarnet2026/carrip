@@ -1,9 +1,13 @@
 'use client'
 
+import { useId } from 'react'
+
 type DateRangePickerProps = {
   departureDate: string
+  departureTime: string
   days: number
   onChangeDate: (date: string) => void
+  onChangeTime: (time: string) => void
   onChangeDays: (days: number) => void
 }
 
@@ -18,56 +22,104 @@ function maxDateIso(): string {
   return max.toISOString().slice(0, 10)
 }
 
+const DAY_CHOICES = [
+  { value: 1, label: '日帰り' },
+  { value: 2, label: '1泊2日' },
+  { value: 3, label: '2泊3日' },
+] as const
+
+const LONG_TRIP_DAYS = [4, 5, 6, 7]
+
+const fieldClass =
+  'carrip-field min-h-[52px] w-full rounded-[10px] border border-line-strong px-4 text-base outline-none focus:border-ink focus:ring-1 focus:ring-ink'
+
+/** 出発日・出発時刻・旅行日数 */
 export function DateRangePicker({
   departureDate,
+  departureTime,
   days,
   onChangeDate,
+  onChangeTime,
   onChangeDays,
 }: DateRangePickerProps) {
+  const dateId = useId()
+  const timeId = useId()
+  const daysId = useId()
+  const isLongTrip = days >= 4
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div>
-        <label className="mb-2 block text-[13px] font-bold text-ink">出発日</label>
-        <input
-          type="date"
-          min={minDateIso()}
-          max={maxDateIso()}
-          value={departureDate}
-          onChange={(e) => onChangeDate(e.target.value)}
-          className="carrip-field min-h-[48px] w-full rounded-xl border border-line px-4 py-2.5 text-[15px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15"
-          style={{
-            colorScheme: 'light',
-            backgroundColor: '#ffffff',
-            color: '#0f172a',
-            WebkitTextFillColor: '#0f172a',
-          }}
-        />
-        <p className="mt-1.5 text-xs text-muted">今日から180日以内</p>
-      </div>
-      <div>
-        <label className="mb-2 block text-[13px] font-bold text-ink">旅行日数</label>
-        <div className="inline-flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
-          <button
-            type="button"
-            disabled={days <= 1}
-            onClick={() => onChangeDays(Math.max(1, days - 1))}
-            className="grid h-9 w-10 place-items-center rounded-lg text-base font-bold text-ink transition hover:bg-neutral-100 disabled:opacity-35 disabled:hover:bg-transparent"
-          >
-            −
-          </button>
-          <span className="min-w-14 text-center text-lg font-bold tabular-nums">
-            {days}日
-          </span>
-          <button
-            type="button"
-            disabled={days >= 7}
-            onClick={() => onChangeDays(Math.min(7, days + 1))}
-            className="grid h-9 w-10 place-items-center rounded-lg text-base font-bold text-ink transition hover:bg-neutral-100 disabled:opacity-35 disabled:hover:bg-transparent"
-          >
-            ＋
-          </button>
+    <div className="flex flex-col gap-7">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <div>
+          <label htmlFor={dateId} className="mb-2 block text-sm font-semibold">
+            出発日
+          </label>
+          <input
+            id={dateId}
+            type="date"
+            min={minDateIso()}
+            max={maxDateIso()}
+            value={departureDate}
+            onChange={(e) => onChangeDate(e.target.value)}
+            className={fieldClass}
+          />
+          <p className="mt-2 mb-0 text-[13px] text-muted">今日から180日以内</p>
+        </div>
+        <div>
+          <label htmlFor={timeId} className="mb-2 block text-sm font-semibold">
+            出発時刻
+          </label>
+          <input
+            id={timeId}
+            type="time"
+            value={departureTime}
+            onChange={(e) => onChangeTime(e.target.value)}
+            className={fieldClass}
+          />
         </div>
       </div>
+
+      <fieldset className="m-0 border-0 p-0">
+        <legend id={daysId} className="mb-3 p-0 text-sm font-semibold">
+          旅行日数
+        </legend>
+        <div className="flex flex-wrap gap-3">
+          {DAY_CHOICES.map((choice) => (
+            <label key={choice.value} className="carrip-option">
+              <input
+                type="radio"
+                name="trip-days"
+                checked={days === choice.value}
+                onChange={() => onChangeDays(choice.value)}
+              />
+              {choice.label}
+            </label>
+          ))}
+          <label className="carrip-option">
+            <input
+              type="radio"
+              name="trip-days"
+              checked={isLongTrip}
+              onChange={() => onChangeDays(4)}
+            />
+            それ以上
+          </label>
+        </div>
+        {isLongTrip && (
+          <select
+            aria-labelledby={daysId}
+            value={days}
+            onChange={(e) => onChangeDays(Number(e.target.value))}
+            className={`${fieldClass} mt-3 max-w-[200px]`}
+          >
+            {LONG_TRIP_DAYS.map((value) => (
+              <option key={value} value={value}>
+                {value - 1}泊{value}日
+              </option>
+            ))}
+          </select>
+        )}
+      </fieldset>
     </div>
   )
 }
