@@ -34,7 +34,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
         <div className="carrip-panel p-6 text-sm text-red-700">{message}</div>
         <Link
           href="/trips"
-          className="mt-4 inline-block text-sm font-extrabold text-brand-dark underline"
+          className="mt-4 inline-block text-sm"
         >
           マイプランに戻る
         </Link>
@@ -47,12 +47,7 @@ export default async function TripDetailPage({ params }: TripDetailPageProps) {
   }
 
   return (
-    <AppShell
-      email={user.email}
-      showLogout
-      title="プラン詳細"
-      subtitle={`${detail.trip.origin} 出発 · ${detail.trip.prefecture?.join('、')}`}
-    >
+    <AppShell email={user.email} showLogout>
       <TripDetailView detail={detail} />
     </AppShell>
   )

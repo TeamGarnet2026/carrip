@@ -21,6 +21,8 @@ type ItineraryListProps = {
   disabled?: boolean
   /** スマホ向けに右側の費用を名前の下にまとめる */
   compact?: boolean
+  /** 出発時刻がわからないとき false にすると、時刻の代わりに順番を出す */
+  showTimes?: boolean
 }
 
 function admissionText(stop: RouteStop): string | null {
@@ -37,6 +39,7 @@ export function ItineraryList({
   onStopsChange,
   disabled = false,
   compact = false,
+  showTimes = true,
 }: ItineraryListProps) {
   const entries = buildItinerary(route, departureTime)
   const editable = onStopsChange != null
@@ -113,7 +116,9 @@ export function ItineraryList({
               key={entry.kind}
               className="grid grid-cols-[56px_20px_minmax(0,1fr)] items-start gap-x-4 border-b border-line py-4 md:grid-cols-[72px_24px_minmax(0,1fr)]"
             >
-              <span className="text-[15px] font-semibold tabular-nums">{entry.time}</span>
+              <span className="text-[15px] font-semibold tabular-nums">
+                {showTimes ? entry.time : ''}
+              </span>
               <span className="mt-1 h-3.5 w-3.5 rounded-[3px] bg-ink" aria-hidden />
               <span>
                 <span className="block text-[15px] font-semibold">{origin}</span>
@@ -174,7 +179,7 @@ export function ItineraryList({
                   <GripIcon className="h-4 w-4" />
                 </button>
               )}
-              {entry.time}
+              {showTimes ? entry.time : `${index + 1}`}
             </span>
             <span
               className={`mt-1 h-3.5 w-3.5 rounded-full border-2 ${
