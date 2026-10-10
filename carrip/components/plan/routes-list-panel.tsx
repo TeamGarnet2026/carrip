@@ -3,14 +3,23 @@
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { DegradedBanner } from '@/components/routes/degraded-banner'
 import { RouteDetailPanel } from '@/components/routes/route-detail-panel'
+import { CostLegend } from '@/components/route/cost-bar'
 import { RouteCard } from '@/components/route/route-card'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import { CheckIcon } from '@/components/ui/icons'
+import { formatJapaneseDate, formatYen } from '@/lib/format'
 import { GENERATION_STEPS } from '@/lib/plan/constants'
-import { loadPlanSession, savePlanSession } from '@/lib/plan/storage'
+import { loadPlanSession, planStorageKey, savePlanSession } from '@/lib/plan/storage'
 import { toRouteGenerateRequest } from '@/lib/plan/types'
 import { recalculateRouteCostsLocally } from '@/lib/routes/cost-sources'
 import type {
@@ -25,7 +34,7 @@ const RoutesMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-[380px] items-center justify-center rounded-lg border border-dashed border-neutral-300 text-sm text-neutral-500 dark:border-neutral-700">
+      <div className="flex h-[380px] items-center justify-center text-sm text-muted">
         地図を読み込み中…
       </div>
     ),
@@ -51,6 +60,8 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
   const [sessionMissing, setSessionMissing] = useState(false)
   const [recalculating, setRecalculating] = useState(false)
   const [costDelta, setCostDelta] = useState<number | null>(null)
+  // スマホではルート一覧 → 詳細の2画面に分ける
+  const [mobileDetail, setMobileDetail] = useState(false)
 
   const generateRoutes = useCallback(
     async (mode: GenerateMode) => {
@@ -277,11 +288,9 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
 
   if (sessionMissing) {
     return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/40">
-        <p className="font-medium text-red-800 dark:text-red-200">
-          プラン情報が見つかりません。最初からやり直してください。
-        </p>
-        <Link href="/plan/new?step=1" className="mt-4 inline-block">
+      <div className="carrip-panel mx-auto max-w-lg p-8 text-center">
+        <p className="m-0 font-semibold">プラン情報が見つかりません。最初からやり直してください。</p>
+        <Link href="/plan/new?step=1" className="mt-5 inline-block">
           <Button variant="secondary">最初からやり直す</Button>
         </Link>
       </div>
@@ -290,23 +299,16 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
 
   if (loading || (!result && !error)) {
     return (
-      <div className="carrip-loading-card mx-auto mt-6 flex flex-col items-center gap-6">
-        <Spinner size="lg" label="ルートを計算中" />
-        <p className="text-sm text-neutral-600 dark:text-neutral-400">
-          {generatingMode === 'stub'
-            ? 'サンプルデータを準備しています…'
-            : '選んだ行き先を回るルートと料金を計算しています（最大60秒）'}
-        </p>
-        {generatingMode === 'live' && <GenerationProgress />}
-      </div>
+      <GenerationProgress mode={generatingMode} planId={planId} />
     )
   }
 
   if (error || !result) {
     return (
-      <div className="rounded-2xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/40">
-        <p className="m-0 font-bold text-red-700 dark:text-red-200">{error}</p>
-        <div className="mt-4 flex flex-wrap gap-3">
+      <div className="carrip-panel mx-auto max-w-2xl p-8">
+        <p className="m-0 text-lg font-semibold">ルートを計算できませんでした</p>
+        <p className="mt-2 mb-0 text-sm text-ink-soft">{error}</p>
+        <div className="mt-6 flex flex-wrap gap-3">
           <Button onClick={() => void generateRoutes('live')}>もう一度計算する</Button>
           <Link href={`/plan/${planId}/spots`}>
             <Button variant="secondary">行き先を変更する</Button>
@@ -323,162 +325,274 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
 
   if (sortedRoutes.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-neutral-300 p-6 text-sm dark:border-neutral-700">
+      <div className="carrip-panel mx-auto max-w-2xl p-8 text-sm">
         ルートが見つかりませんでした。
-        <Link href={`/plan/${planId}/spots`} className="ml-2 underline">
+        <Link href={`/plan/${planId}/spots`} className="ml-2">
           行き先を変更する
         </Link>
       </div>
     )
   }
 
-  return (
-    <div className="space-y-6">
-      {overBudget && (
-        <div
-          className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200"
-          role="alert"
+  const recommendedId = result.routes[0]?.id
+  const routesWithinBudget =
+    budgetPerPerson != null
+      ? sortedRoutes.filter((route) => route.cost_per_person <= budgetPerPerson).length
+      : null
+  const eyebrow = session
+    ? `${session.form.origin} 出発 · ${formatJapaneseDate(session.form.departureDate)} · ${people}人`
+    : ''
+  const selectedLabel = selectedIndex >= 0 ? `案${selectedIndex + 1}` : ''
+
+  const sortControl = (
+    <div role="group" aria-label="並び替え" className="flex gap-0.5 rounded-[10px] bg-segment p-1">
+      {(['score', 'cost', 'time'] as SortKey[]).map((key) => (
+        <button
+          key={key}
+          type="button"
+          aria-pressed={sortKey === key}
+          onClick={() => setSortKey(key)}
+          className={`min-h-9 flex-1 rounded-lg px-4 text-[13px] whitespace-nowrap transition ${
+            sortKey === key ? 'bg-surface font-medium text-ink' : 'text-ink hover:bg-surface/60'
+          }`}
         >
-          設定した予算（1人あたり {budgetPerPerson!.toLocaleString('ja-JP')}円）を超過しています。
+          {key === 'score' ? 'おすすめ' : key === 'cost' ? '安い順' : '早い順'}
+        </button>
+      ))}
+    </div>
+  )
+
+  const renderMap = (compact: boolean) =>
+    selectedRouteId ? (
+      <RoutesMap
+        routes={sortedRoutes}
+        selectedRouteId={selectedRouteId}
+        onSelectRoute={handleSelectRoute}
+        originLabel={originLabel}
+        compact={compact}
+      />
+    ) : null
+
+  return (
+    <div className="flex flex-col gap-7">
+      {/* 見出し（スマホで詳細表示中は隠す） */}
+      <div
+        className={`flex flex-wrap items-end justify-between gap-4 ${mobileDetail ? 'hidden md:flex' : ''}`}
+      >
+        <div className="flex flex-col gap-2">
+          <p className="m-0 hidden text-[13px] text-muted md:block">{eyebrow}</p>
+          <h1 className="m-0 text-[30px] leading-tight font-bold md:text-[32px]">ルートと料金</h1>
         </div>
-      )}
+        <div className="flex flex-wrap items-center gap-3">
+          {routesWithinBudget != null && (
+            <span
+              className={`text-[13px] ${
+                routesWithinBudget === sortedRoutes.length ? 'text-brand' : 'text-cost-admission'
+              }`}
+            >
+              {routesWithinBudget === sortedRoutes.length
+                ? `${sortedRoutes.length}ルートとも予算（1人 ${formatYen(budgetPerPerson!)}）内`
+                : `${sortedRoutes.length - routesWithinBudget}ルートが予算（1人 ${formatYen(budgetPerPerson!)}）を超えています`}
+            </span>
+          )}
+          <div className="hidden md:block">{sortControl}</div>
+        </div>
+      </div>
 
       {(result.degraded || result.degraded_reasons?.length) && (
-        <DegradedBanner
-          degraded={result.degraded}
-          degradedReasons={result.degraded_reasons}
-        />
+        <DegradedBanner degraded={result.degraded} degradedReasons={result.degraded_reasons} />
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="m-0 text-sm font-bold text-neutral-600 dark:text-neutral-400">
-          {sortedRoutes.length}ルート · {originLabel} 出発
+      {overBudget && (
+        <p
+          className="m-0 rounded-xl bg-[#f6e4dd] px-4 py-3 text-sm font-medium text-[#8a3f27]"
+          role="alert"
+        >
+          選んでいるルートは、設定した予算（1人あたり {formatYen(budgetPerPerson!)}）を超えています。
         </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href={`/plan/${planId}/spots`}>
-            <Button variant="secondary" size="sm">
-              行き先を変更
-            </Button>
-          </Link>
-          <Button size="sm" onClick={() => void generateRoutes('live')}>
-            再計算
-          </Button>
-        </div>
-      </div>
-
-      <div
-        className="ml-auto flex w-fit flex-wrap items-center gap-1 rounded-xl bg-neutral-100 p-1 text-sm"
-        role="group"
-        aria-label="並び替え"
-      >
-        {(['score', 'cost', 'time'] as SortKey[]).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setSortKey(key)}
-            aria-pressed={sortKey === key}
-            className={`rounded-lg px-4 py-1.5 font-bold transition ${
-              sortKey === key
-                ? 'bg-surface text-brand-dark shadow-[0_1px_3px_rgba(15,23,42,0.12)]'
-                : 'text-muted hover:text-ink'
-            }`}
-          >
-            {key === 'score' ? 'おすすめ' : key === 'cost' ? '安い順' : '早い順'}
-          </button>
-        ))}
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {sortedRoutes.map((route, index) => (
-          <RouteCard
-            key={route.id}
-            route={route}
-            index={index}
-            people={people}
-            isSelected={route.id === selectedRouteId}
-            onClick={() => handleSelectRoute(route.id)}
-            showIndexLabel={false}
-            showRecommendBadge={false}
-          />
-        ))}
-      </div>
-
-      {selectedRouteId && (
-        <RoutesMap
-          routes={sortedRoutes}
-          selectedRouteId={selectedRouteId}
-          onSelectRoute={handleSelectRoute}
-          originLabel={originLabel}
-        />
       )}
 
       {costDelta != null && (
-        <div
+        <p
           role="status"
-          className={`rounded-xl border px-4 py-3 text-sm font-bold ${
-            costDelta > 0
-              ? 'border-red-300 bg-red-50 text-red-800 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200'
-              : 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200'
+          className={`m-0 rounded-xl px-4 py-3 text-sm font-medium ${
+            costDelta > 0 ? 'bg-[#f6e4dd] text-[#8a3f27]' : 'bg-brand-soft text-brand'
           }`}
         >
           変更により費用が{' '}
           {costDelta > 0
-            ? `+${costDelta.toLocaleString('ja-JP')}円 増加`
-            : `−${Math.abs(costDelta).toLocaleString('ja-JP')}円 減少`}
-          しました
+            ? `+${costDelta.toLocaleString('ja-JP')}円 増えました`
+            : `−${Math.abs(costDelta).toLocaleString('ja-JP')}円 減りました`}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-start gap-6">
+        {/* ルート候補（スマホは地図 → 並び替え → カード） */}
+        <div
+          className={`flex min-w-0 flex-[1_1_380px] flex-col gap-3 ${mobileDetail ? 'hidden md:flex' : ''}`}
+        >
+          <div className="overflow-hidden rounded-2xl md:hidden">{renderMap(true)}</div>
+          <div className="md:hidden">{sortControl}</div>
+          <div role="radiogroup" aria-label="ルート候補" className="flex flex-col gap-3">
+            {sortedRoutes.map((route, index) => (
+              <RouteCard
+                key={route.id}
+                route={route}
+                index={index}
+                people={people}
+                isSelected={route.id === selectedRouteId}
+                onClick={() => handleSelectRoute(route.id)}
+                showRecommendBadge={route.id === recommendedId}
+                overBudget={budgetPerPerson != null && route.cost_per_person > budgetPerPerson}
+                collapsed={route.id !== selectedRouteId}
+              />
+            ))}
+          </div>
+          <div className="mt-3 hidden md:block">
+            <CostLegend />
+          </div>
+          <div className="mt-4 hidden flex-wrap gap-3 md:flex">
+            <Button variant="secondary" size="sm" onClick={() => void generateRoutes('live')}>
+              もう一度計算する
+            </Button>
+          </div>
         </div>
-      )}
 
-      {selectedRoute && selectedIndex >= 0 && (
-        <RouteDetailPanel
-          route={selectedRoute}
-          index={selectedIndex}
-          origin={originLabel}
-          people={people}
-          editable
-          recalculating={recalculating}
-          addableStops={addableStops}
-          onStopsChange={handleStopsChange}
-          showIndexLabel={false}
-        />
-      )}
+        {/* 選んだルートの詳細 */}
+        {selectedRoute && selectedIndex >= 0 && (
+          <div className={`min-w-0 flex-[1.4_1_520px] ${mobileDetail ? '' : 'hidden md:block'}`}>
+            <RouteDetailPanel
+              route={selectedRoute}
+              index={selectedIndex}
+              origin={originLabel}
+              people={people}
+              editable
+              recalculating={recalculating}
+              addableStops={addableStops}
+              onStopsChange={handleStopsChange}
+              map={<div className="hidden md:block">{renderMap(false)}</div>}
+              departureTime={session?.form.options.departureTime}
+              fuelKmL={session?.form.vehicle.fuel_km_l}
+            />
+          </div>
+        )}
+      </div>
 
-      <div className="sticky bottom-3 z-10 flex flex-wrap justify-end gap-3 rounded-2xl border border-line bg-white/90 p-3 shadow-[var(--shadow-raised)] backdrop-blur max-[960px]:bottom-[84px]">
-        <Link href={`/plan/${planId}/confirmed`}>
-          <Button>このルートを選ぶ</Button>
+      {/* 操作ボタン */}
+      <div className="hidden justify-end gap-3 border-t border-line pt-6 md:flex">
+        <Link href={`/plan/${planId}/spots`}>
+          <Button variant="secondary" size="lg">
+            行き先を変更
+          </Button>
         </Link>
         <Link href={`/plan/${planId}/confirmed`}>
-          <Button variant="secondary">保存して共有</Button>
+          <Button size="lg">{selectedLabel}で保存して共有</Button>
         </Link>
+      </div>
+      <div className="carrip-bottom-bar -mx-5 -mb-10 flex gap-3 md:hidden">
+        {mobileDetail ? (
+          <>
+            <Button variant="secondary" size="lg" onClick={() => setMobileDetail(false)}>
+              案を選び直す
+            </Button>
+            <Link href={`/plan/${planId}/confirmed`} className="flex-1">
+              <Button size="lg" className="w-full">
+                保存して共有
+              </Button>
+            </Link>
+          </>
+        ) : (
+          <Button size="lg" className="w-full" onClick={() => setMobileDetail(true)}>
+            {selectedLabel}の詳細を見る
+          </Button>
+        )}
       </div>
     </div>
   )
 }
 
-function GenerationProgress() {
+function subscribeToNothing() {
+  return () => {}
+}
+
+function GenerationProgress({ mode, planId }: { mode: GenerateMode | null; planId: string }) {
   const [activeStep, setActiveStep] = useState(0)
+  // sessionStorage はサーバーで読めないため、サーバー描画時は空にして表示のずれを防ぐ
+  const rawSession = useSyncExternalStore(
+    subscribeToNothing,
+    () => sessionStorage.getItem(planStorageKey(planId)),
+    () => null
+  )
+  const summary = useMemo(() => {
+    if (!rawSession) return ''
+    const session = loadPlanSession(planId)
+    if (!session) return ''
+    const names = (session.spots ?? []).map((stop) => stop.name).join(' · ')
+    return names ? `${session.form.origin} → ${names}` : session.form.origin
+  }, [rawSession, planId])
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setActiveStep((current) => (current + 1) % GENERATION_STEPS.length)
+      setActiveStep((current) => Math.min(current + 1, GENERATION_STEPS.length - 1))
     }, 2500)
     return () => window.clearInterval(timer)
   }, [])
 
+  const progress = ((activeStep + 0.5) / GENERATION_STEPS.length) * 100
+
   return (
-    <ol className="space-y-2 text-sm">
-      {GENERATION_STEPS.map((label, index) => (
-        <li
-          key={label}
-          className={
-            index <= activeStep
-              ? 'text-teal-700 dark:text-teal-400'
-              : 'text-neutral-400'
-          }
-        >
-          {index <= activeStep ? '✓' : '…'} {label}
-        </li>
-      ))}
-    </ol>
+    <div className="mx-auto w-full max-w-[720px] py-6 md:py-16">
+      {summary && <p className="m-0 text-sm text-muted">{summary}</p>}
+      <h1 className="mt-3 mb-0 text-[26px] leading-tight font-bold md:text-[34px]">
+        ルートと料金を計算しています
+      </h1>
+      <p className="mt-3 mb-0 text-[15px] text-ink-soft">
+        {mode === 'stub'
+          ? 'サンプルデータを準備しています。'
+          : '通常は数秒、混み合っているときは最大60秒ほどかかります。'}
+      </p>
+      <div
+        className="mt-8 h-1 overflow-hidden rounded-full bg-line"
+        role="progressbar"
+        aria-label="計算の進み具合"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress)}
+      >
+        <div className="h-full bg-brand transition-all duration-700" style={{ width: `${progress}%` }} />
+      </div>
+      <ol className="mt-8 mb-0 list-none overflow-hidden rounded-2xl border border-line bg-surface p-0">
+        {GENERATION_STEPS.map((label, index) => {
+          const done = index < activeStep
+          const current = index === activeStep
+          return (
+            <li
+              key={label}
+              className="flex items-center gap-4 border-b border-line px-6 py-5 text-[15px] last:border-0"
+            >
+              {done ? (
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-brand-soft text-brand">
+                  <CheckIcon className="h-4 w-4" />
+                </span>
+              ) : current ? (
+                <span
+                  className="h-7 w-7 animate-spin rounded-full border-2 border-line border-t-brand"
+                  aria-hidden
+                />
+              ) : (
+                <span className="h-7 w-7 rounded-full border border-line-strong" aria-hidden />
+              )}
+              <span className={current ? 'font-semibold' : done ? '' : 'text-muted'}>
+                {done ? label.replace(/中$/, '') : label}
+              </span>
+              {done && <span className="ml-auto text-[13px] text-muted">完了</span>}
+            </li>
+          )
+        })}
+      </ol>
+      <Link href={`/plan/${planId}/spots`} className="mt-8 inline-block text-sm">
+        キャンセルして行き先を変更
+      </Link>
+    </div>
   )
 }

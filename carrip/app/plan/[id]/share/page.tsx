@@ -25,8 +25,6 @@ export default async function PlanSharePage({
     <AppShell
       email={user?.email}
       showLogout={!!user}
-      title="LINE共有"
-      subtitle="共有URLまたはQRコードでメンバーに旅程を送れます"
     >
       <SharePanel planId={id} routeId={routeId} />
     </AppShell>

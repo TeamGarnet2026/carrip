@@ -1,20 +1,16 @@
 'use client'
 
-import { useRef, useState, type PointerEvent } from 'react'
-import { OpenInGoogleMapsLink } from '@/components/maps/open-in-google-maps-link'
-import { RoundTripLegend } from '@/components/maps/round-trip-legend'
-import { CostBreakdownPanel } from '@/components/route/cost-breakdown-panel'
+import { useState, type ReactNode } from 'react'
+import { CostTiles } from '@/components/route/cost-tiles'
+import { ItineraryList } from '@/components/route/itinerary-list'
+import { ExternalIcon, PlusIcon } from '@/components/ui/icons'
+import { formatDuration, formatYen } from '@/lib/format'
+import { buildGoogleMapsDirectionsUrl } from '@/lib/maps/google-maps-directions-url'
 import {
-  buildRoundTripStopLegs,
   computeRoundTripLegDurations,
-  formatDurationMinutes,
-  formatRouteDuration,
   isRoundTripRoute,
-  roundTripStopNumber,
-  type RoundTripLeg,
 } from '@/lib/maps/round-trip-display'
-import { driverChangeBadgeLabel } from '@/lib/poi/stop-labels'
-import { moveItem } from '@/lib/routes/reorder-stops'
+import { buildItinerary } from '@/lib/routes/itinerary'
 import type { RouteCandidate, RouteStop } from '@/lib/routes/types'
 
 type RouteDetailPanelProps = {
@@ -27,88 +23,43 @@ type RouteDetailPanelProps = {
   addableStops?: RouteStop[]
   onStopsChange?: (stops: RouteStop[], needsRouteRecalc: boolean) => void
   showIndexLabel?: boolean
+  /** パネル上部に表示する地図 */
+  map?: ReactNode
+  /** 条件入力で決めた出発時刻（ルートに時刻がないとき使う） */
+  departureTime?: string
+  fuelKmL?: number
 }
 
-function formatYen(amount: number): string {
-  return `${amount.toLocaleString('ja-JP')}円`
-}
-
+/** 選んだルートの詳細（地図・総費用・費用4項目・立ち寄り順） */
 export function RouteDetailPanel({
   route,
   index,
-  origin,
+  origin = '出発地',
   people = 2,
   editable = false,
   recalculating = false,
   addableStops = [],
   onStopsChange,
   showIndexLabel = true,
+  map,
+  departureTime,
+  fuelKmL,
 }: RouteDetailPanelProps) {
   const [showAddList, setShowAddList] = useState(false)
-  const [dragFrom, setDragFrom] = useState<number | null>(null)
-  const [dragOver, setDragOver] = useState<number | null>(null)
-  const stopItemRefs = useRef<(HTMLLIElement | null)[]>([])
 
   const canEdit = editable && onStopsChange != null && !recalculating
   const roundTrip = isRoundTripRoute(route)
-  const stopLegs = roundTrip
-    ? buildRoundTripStopLegs(route.polyline, route.stops)
-    : []
   const legDurations = roundTrip ? computeRoundTripLegDurations(route) : null
+  const itinerary = buildItinerary(route, departureTime)
+  const endTime = itinerary.at(-1)?.time
+  const directions = buildGoogleMapsDirectionsUrl({
+    origin,
+    stops: route.stops.map((stop) => ({ lat: stop.lat, lng: stop.lng, name: stop.name })),
+  })
 
-  function moveStop(stopIndex: number, direction: -1 | 1) {
-    if (!canEdit) return
-    const target = stopIndex + direction
-    if (target < 0 || target >= route.stops.length) return
-
-    onStopsChange!(moveItem(route.stops, stopIndex, target), true)
-  }
-
-  // ポインターイベントで実装し、マウスとタッチ（スマートフォン）の両方でドラッグできるようにする
-  function handleDragStart(event: PointerEvent<HTMLElement>, stopIndex: number) {
-    if (!canEdit || route.stops.length <= 1) return
-    event.preventDefault()
-    event.currentTarget.setPointerCapture(event.pointerId)
-    setDragFrom(stopIndex)
-    setDragOver(stopIndex)
-  }
-
-  function handleDragMove(event: PointerEvent<HTMLElement>) {
-    if (dragFrom == null) return
-    const rects = stopItemRefs.current
-      .slice(0, route.stops.length)
-      .map((item) => item?.getBoundingClientRect())
-    const y = event.clientY
-
-    let over = rects.findIndex(
-      (rect) => rect != null && y >= rect.top && y <= rect.bottom
-    )
-    if (over < 0) {
-      const firstTop = rects[0]?.top ?? 0
-      over = y < firstTop ? 0 : route.stops.length - 1
-    }
-    if (over !== dragOver) setDragOver(over)
-  }
-
-  function handleDragEnd() {
-    const from = dragFrom
-    const to = dragOver
-    setDragFrom(null)
-    setDragOver(null)
-    if (!canEdit || from == null || to == null || from === to) return
-    onStopsChange!(moveItem(route.stops, from, to), true)
-  }
-
-  function handleDragCancel() {
-    setDragFrom(null)
-    setDragOver(null)
-  }
-
-  function removeStop(stopIndex: number) {
-    if (!canEdit || route.stops.length <= 1) return
-    const stops = route.stops.filter((_, i) => i !== stopIndex)
-    onStopsChange!(stops, true)
-  }
+  const availableToAdd = addableStops.filter(
+    (candidate) => !route.stops.some((stop) => stop.place_id === candidate.place_id)
+  )
 
   function addStop(stop: RouteStop) {
     if (!canEdit) return
@@ -116,117 +67,106 @@ export function RouteDetailPanel({
     onStopsChange!([...route.stops, stop], true)
   }
 
-  function updateParking(stopIndex: number, parkingYen: number) {
-    if (!canEdit) return
-    const stops = route.stops.map((stop, i) =>
-      i === stopIndex
-        ? { ...stop, parking_yen: parkingYen, parking_source: 'manual' as const }
-        : stop
-    )
-    onStopsChange!(stops, false)
-  }
-
-  const availableToAdd = addableStops.filter(
-    (candidate) =>
-      !route.stops.some((stop) => stop.place_id === candidate.place_id)
-  )
-
   return (
-    <div className="rounded-2xl border border-line bg-surface p-5 shadow-[var(--shadow-carrip)] sm:p-6">
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <p className="m-0 text-lg font-bold text-ink">
-          {showIndexLabel ? `案${index + 1}: ` : ''}
-          {route.title}
-        </p>
-        <span className="rounded-lg bg-neutral-100 px-2 py-0.5 text-xs text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300">
-          🚗 車移動のみ
-        </span>
-        {roundTrip && (
-          <span className="rounded-lg bg-teal-100 px-2 py-0.5 text-xs text-teal-800 dark:bg-teal-950 dark:text-teal-200">
-            往復
-          </span>
-        )}
-        {recalculating && (
-          <span className="flex items-center gap-1.5 text-xs text-teal-700 dark:text-teal-400">
-            <span
-              className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent"
-              aria-hidden
-            />
-            費用を再計算中…
-          </span>
-        )}
-      </div>
-
-      {route.summary && (
-        <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
-          {route.summary}
-        </p>
+    <div className="overflow-hidden rounded-2xl border border-line bg-surface">
+      {map && (
+        <div className="relative border-b border-line bg-sunken">
+          {map}
+          {directions && (
+            <a
+              href={directions.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="absolute top-4 right-4 z-[500] flex min-h-10 items-center gap-1.5 rounded-lg border border-line bg-surface px-3.5 text-[13px] font-medium text-ink no-underline shadow-[var(--shadow-carrip)] hover:bg-soft"
+            >
+              Googleマップで開く
+              <ExternalIcon className="h-3.5 w-3.5" />
+            </a>
+          )}
+        </div>
       )}
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl bg-soft p-4 text-sm dark:bg-neutral-900">
-          <p className="mt-0 mb-3 text-[13px] font-bold text-muted">費用内訳</p>
-          <CostBreakdownPanel
-            breakdown={route.cost_breakdown}
-            people={people}
-            sources={route.cost_sources}
-          />
-        </div>
-        <div className="rounded-xl bg-soft p-4 text-sm dark:bg-neutral-900">
-          <p className="mt-0 mb-3 text-[13px] font-bold text-muted">走行概要</p>
-          <ul className="space-y-1 text-neutral-600 dark:text-neutral-400">
-            <li>総距離: {route.total_distance_km} km</li>
+      <div className="flex flex-col gap-6 p-5 md:p-8">
+        <div className="flex flex-wrap items-end gap-x-10 gap-y-4">
+          <div>
+            <p className="m-0 text-[13px] text-muted">
+              {showIndexLabel ? `案${index + 1} · ` : ''}総費用
+            </p>
+            <p className="mt-1 mb-0 text-[34px] leading-none font-semibold tracking-[-0.03em] tabular-nums">
+              {formatYen(route.total_cost)}
+            </p>
+          </div>
+          <dl className="m-0 flex gap-8 text-[13px]">
             {legDurations ? (
               <>
-                <li>行き: {formatDurationMinutes(legDurations.outboundMin)}</li>
-                <li>帰り: {formatDurationMinutes(legDurations.returnMin)}</li>
+                <div>
+                  <dt className="text-muted">行き</dt>
+                  <dd className="m-0 mt-1 text-base font-semibold">
+                    {formatDuration(legDurations.outboundMin)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted">帰り</dt>
+                  <dd className="m-0 mt-1 text-base font-semibold">
+                    {formatDuration(legDurations.returnMin)}
+                  </dd>
+                </div>
               </>
             ) : (
-              <li>総時間: {formatRouteDuration(route)}</li>
+              <div>
+                <dt className="text-muted">運転時間</dt>
+                <dd className="m-0 mt-1 text-base font-semibold">
+                  {formatDuration(route.total_duration_min)}
+                </dd>
+              </div>
             )}
-            <li>総費用: {formatYen(route.total_cost)}</li>
-            <li>1人あたり: {formatYen(route.cost_per_person)}</li>
-            {route.departure_time && (
-              <li>出発: {route.departure_time.replace('T', ' ').slice(0, 16)}</li>
+            {endTime && (
+              <div>
+                <dt className="text-muted">{roundTrip ? '帰着' : '到着'}</dt>
+                <dd className="m-0 mt-1 text-base font-semibold tabular-nums">{endTime}</dd>
+              </div>
             )}
-            {route.arrival_time && (
-              <li>到着: {route.arrival_time.replace('T', ' ').slice(0, 16)}</li>
-            )}
-          </ul>
+          </dl>
+          {recalculating && (
+            <p className="m-0 flex items-center gap-2 text-[13px] text-brand" role="status">
+              <span
+                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                aria-hidden
+              />
+              費用を計算し直しています…
+            </p>
+          )}
         </div>
-      </div>
 
-      {route.stops.length > 0 && (
-        <div className="mt-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="m-0 text-[13px] font-bold text-muted">立ち寄り地点</p>
+        <CostTiles route={route} people={people} fuelKmL={fuelKmL} />
+
+        <section>
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="m-0 text-lg font-bold">立ち寄り順</h3>
             {editable && availableToAdd.length > 0 && (
               <button
                 type="button"
                 disabled={!canEdit}
+                aria-expanded={showAddList}
                 onClick={() => setShowAddList((current) => !current)}
-                className="text-xs text-teal-700 underline disabled:opacity-50 dark:text-teal-400"
+                className="flex min-h-10 items-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3.5 text-[13px] font-medium hover:bg-soft disabled:opacity-40"
               >
-                {showAddList ? '閉じる' : '＋候補から追加'}
+                <PlusIcon className="h-4 w-4" />
+                {showAddList ? '閉じる' : '立ち寄りを追加'}
               </button>
             )}
           </div>
 
           {showAddList && (
-            <ul className="mb-3 space-y-1 rounded-lg border border-dashed border-neutral-300 p-2 text-sm dark:border-neutral-700">
+            <ul className="mt-0 mb-4 flex list-none flex-col gap-2 rounded-xl border border-dashed border-line-strong p-3">
               {availableToAdd.map((candidate) => (
-                <li
-                  key={candidate.place_id}
-                  className="flex items-center justify-between gap-2"
-                >
-                  <span className="text-neutral-700 dark:text-neutral-300">
-                    {candidate.name}
-                  </span>
+                <li key={candidate.place_id} className="flex items-center justify-between gap-3">
+                  <span className="text-sm">{candidate.name}</span>
                   <button
                     type="button"
                     disabled={!canEdit}
                     onClick={() => addStop(candidate)}
-                    className="rounded-lg border border-teal-600 px-2 py-0.5 text-xs text-teal-700 disabled:opacity-50 dark:border-teal-400 dark:text-teal-400"
+                    className="min-h-8 rounded-lg border border-line-strong px-3 text-[13px] hover:bg-soft disabled:opacity-40"
                   >
                     追加
                   </button>
@@ -235,240 +175,22 @@ export function RouteDetailPanel({
             </ul>
           )}
 
-          {roundTrip && (
-            <div className="mb-3">
-              <RoundTripLegend />
-            </div>
-          )}
-
-          <ol className="space-y-2 text-sm text-neutral-600 dark:text-neutral-400">
-            {roundTrip && origin && (
-              <li className="flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-2 dark:border-neutral-900">
-                <OrderBadge kind="departure" />
-                <span className="font-medium">{origin}</span>
-                <span className="text-xs text-teal-700 dark:text-teal-400">
-                  出発
-                </span>
-              </li>
-            )}
-            {route.stops.map((stop, stopIndex) => {
-              const label = driverChangeBadgeLabel(
-                stop.category,
-                stop.is_rest_stop
-              )
-              const stopLeg = stopLegs[stopIndex]
-              const isDragging = dragFrom === stopIndex
-              const isDropTarget =
-                dragFrom != null && dragOver === stopIndex && dragFrom !== stopIndex
-              return (
-                <li
-                  key={stop.place_id}
-                  ref={(element) => {
-                    stopItemRefs.current[stopIndex] = element
-                  }}
-                  className={`flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-2 last:border-0 dark:border-neutral-900 ${
-                    isDragging ? 'opacity-50' : ''
-                  } ${
-                    isDropTarget
-                      ? 'rounded bg-teal-50 ring-2 ring-teal-500 dark:bg-teal-950/40'
-                      : ''
-                  }`}
-                >
-                  {editable && (
-                    <button
-                      type="button"
-                      aria-label={`${stop.name}をドラッグして並び替え`}
-                      title="ドラッグして並び替え"
-                      disabled={!canEdit || route.stops.length <= 1}
-                      onPointerDown={(event) => handleDragStart(event, stopIndex)}
-                      onPointerMove={handleDragMove}
-                      onPointerUp={handleDragEnd}
-                      onPointerCancel={handleDragCancel}
-                      className="flex h-8 w-6 shrink-0 cursor-grab touch-none select-none items-center justify-center rounded text-base text-neutral-400 hover:bg-neutral-100 active:cursor-grabbing disabled:cursor-default disabled:opacity-30 dark:hover:bg-neutral-800"
-                    >
-                      ⠿
-                    </button>
-                  )}
-                  <OrderBadge
-                    kind="stop"
-                    index={
-                      roundTrip
-                        ? roundTripStopNumber(stopLegs, stopIndex) - 1
-                        : stopIndex
-                    }
-                    leg={roundTrip ? stopLeg : undefined}
-                  />
-                  <span>{stop.name}</span>
-                  {roundTrip && stopLeg && (
-                    <span
-                      className={`rounded-lg px-1.5 py-0.5 text-xs ${
-                        stopLeg === 'return'
-                          ? 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-200'
-                          : 'bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300'
-                      }`}
-                    >
-                      {stopLeg === 'return' ? '帰り' : '行き'}
-                    </span>
-                  )}
-                  {label && (
-                    <span className="rounded-lg bg-amber-100 px-1.5 py-0.5 text-xs text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-                      {label}
-                    </span>
-                  )}
-
-                  {editable && !stop.is_rest_stop && (
-                    <label className="flex items-center gap-1 text-xs text-neutral-500">
-                      駐車
-                      <input
-                        type="number"
-                        min={0}
-                        step={100}
-                        defaultValue={stop.parking_yen ?? 0}
-                        disabled={!canEdit}
-                        key={`${stop.place_id}-${stop.parking_yen}`}
-                        onBlur={(e) => {
-                          const value = Math.max(
-                            0,
-                            Math.round(Number(e.target.value) || 0)
-                          )
-                          if (value !== (stop.parking_yen ?? 0)) {
-                            updateParking(stopIndex, value)
-                          }
-                        }}
-                        className="w-20 rounded-lg border border-neutral-300 px-1.5 py-0.5 text-right text-xs dark:border-neutral-700 dark:bg-neutral-900"
-                      />
-                      円
-                      {stop.parking_source === 'manual' && (
-                        <span className="text-teal-700 dark:text-teal-400">
-                          手動
-                        </span>
-                      )}
-                    </label>
-                  )}
-
-                  {editable && (
-                    <span className="ml-auto flex items-center gap-1">
-                      <button
-                        type="button"
-                        aria-label="上へ移動"
-                        disabled={!canEdit || stopIndex === 0}
-                        onClick={() => moveStop(stopIndex, -1)}
-                        className="rounded-lg border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="下へ移動"
-                        disabled={!canEdit || stopIndex === route.stops.length - 1}
-                        onClick={() => moveStop(stopIndex, 1)}
-                        className="rounded-lg border border-neutral-300 px-1.5 py-0.5 text-xs disabled:opacity-30 dark:border-neutral-700"
-                      >
-                        ↓
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="削除"
-                        disabled={!canEdit || route.stops.length <= 1}
-                        onClick={() => removeStop(stopIndex)}
-                        className="rounded-lg border border-red-300 px-1.5 py-0.5 text-xs text-red-600 disabled:opacity-30 dark:border-red-900 dark:text-red-400"
-                      >
-                        ✕
-                      </button>
-                    </span>
-                  )}
-                </li>
-              )
-            })}
-            {roundTrip && origin && (
-              <li className="flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-2 dark:border-neutral-900">
-                <OrderBadge kind="arrival" />
-                <span className="font-medium">{origin}</span>
-                <span className="text-xs text-amber-700 dark:text-amber-400">
-                  帰着
-                </span>
-              </li>
-            )}
-          </ol>
+          <ItineraryList
+            route={route}
+            origin={origin}
+            people={people}
+            departureTime={departureTime}
+            onStopsChange={editable ? onStopsChange : undefined}
+            disabled={!canEdit}
+          />
 
           {editable && (
-            <p className="mt-2 text-xs text-neutral-500">
-              ⠿ をドラッグ（または ↑↓）して並び替えられます。並び替え・削除・追加でルートと費用を自動で再計算します。駐車料金は実際の料金がわかったら上書きできます。
+            <p className="mt-4 mb-0 text-[13px] text-muted">
+              ドラッグ（または ↑↓）で並び替えできます。変更すると費用を自動で計算し直します。
             </p>
           )}
-
-          {origin && (
-            <div className="mt-3">
-              <OpenInGoogleMapsLink
-                origin={origin}
-                stops={route.stops.map((stop) => ({
-                  lat: stop.lat,
-                  lng: stop.lng,
-                  name: stop.name,
-                }))}
-                size="sm"
-              />
-            </div>
-          )}
-        </div>
-      )}
-
-      {route.sections.length > 0 && (
-        <details className="mt-4">
-          <summary className="cursor-pointer text-sm font-medium">
-            ルート詳細（NAVITIME）
-          </summary>
-          <ul className="mt-2 space-y-1 text-sm text-neutral-600 dark:text-neutral-400">
-            {route.sections.map((section, sectionIndex) => (
-              <li key={`${section.type}-${sectionIndex}`}>
-                [{section.type}] {section.name}
-                {section.duration_min != null &&
-                  ` · ${formatDurationMinutes(section.duration_min)}`}
-                {section.distance_km != null && ` · ${section.distance_km} km`}
-              </li>
-            ))}
-          </ul>
-        </details>
-      )}
+        </section>
+      </div>
     </div>
-  )
-}
-
-function OrderBadge({
-  kind,
-  index,
-  leg,
-}: {
-  kind: 'departure' | 'arrival' | 'stop'
-  index?: number
-  leg?: RoundTripLeg
-}) {
-  if (kind === 'departure') {
-    return (
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-teal-600 text-xs font-bold text-white">
-        発
-      </span>
-    )
-  }
-  if (kind === 'arrival') {
-    return (
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white">
-        帰
-      </span>
-    )
-  }
-
-  return (
-    <span
-      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${
-        leg === 'return'
-          ? 'bg-amber-500'
-          : leg === 'outbound'
-            ? 'bg-teal-600'
-            : 'bg-blue-600'
-      }`}
-    >
-      {(index ?? 0) + 1}
-    </span>
   )
 }

@@ -68,3 +68,131 @@ export function CarIcon(props: IconProps) {
     </BaseIcon>
   )
 }
+
+export function PlusCircleIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 8v8M8 12h8" />
+    </BaseIcon>
+  )
+}
+
+export function PlusIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </BaseIcon>
+  )
+}
+
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="m15 6-6 6 6 6" />
+    </BaseIcon>
+  )
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="m5 12.5 4.5 4.5L19 7.5" />
+    </BaseIcon>
+  )
+}
+
+export function SearchIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" />
+    </BaseIcon>
+  )
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M6 6l12 12M18 6 6 18" />
+    </BaseIcon>
+  )
+}
+
+export function TrashIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+    </BaseIcon>
+  )
+}
+
+export function LocateIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 3v3M12 18v3M3 12h3M18 12h3" />
+    </BaseIcon>
+  )
+}
+
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </BaseIcon>
+  )
+}
+
+export function ExternalIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M8 16 16 8M10 8h6v6" />
+    </BaseIcon>
+  )
+}
+
+export function GripIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <circle cx="9" cy="6" r="1" />
+      <circle cx="15" cy="6" r="1" />
+      <circle cx="9" cy="12" r="1" />
+      <circle cx="15" cy="12" r="1" />
+      <circle cx="9" cy="18" r="1" />
+      <circle cx="15" cy="18" r="1" />
+    </BaseIcon>
+  )
+}
+
+/** Carrip のロゴマーク（緑の角丸に道と目的地の点） */
+export function LogoMark({ size = 24, ...props }: IconProps & { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 26 26"
+      fill="none"
+      aria-hidden
+      {...props}
+    >
+      <rect width="26" height="26" rx="7" fill="#2F4A3F" />
+      <path
+        d="M8 20 C10 13, 16 13, 18 6"
+        stroke="#F3F3F0"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+      />
+      <circle cx="18" cy="6" r="2" fill="#C9A44C" />
+    </svg>
+  )
+}
+
+export function AlertIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M12 4 2.8 19.5h18.4L12 4Z" />
+      <path d="M12 10v4.5M12 17.2v.1" />
+    </BaseIcon>
+  )
+}

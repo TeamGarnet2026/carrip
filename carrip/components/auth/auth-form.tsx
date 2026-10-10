@@ -44,10 +44,20 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
     router.refresh()
   }
 
+  const fieldClass =
+    'carrip-field min-h-[50px] w-full rounded-[10px] border border-line-strong px-3.5 text-base outline-none focus:border-ink focus:ring-1 focus:ring-ink'
+  const fieldStyle = {
+    colorScheme: 'light' as const,
+    backgroundColor: '#ffffff',
+    color: '#1b1d1c',
+    WebkitTextFillColor: '#1b1d1c',
+  }
+  const otherHref = `${isLogin ? '/signup' : '/login'}?redirectTo=${encodeURIComponent(redirectTo)}`
+
   return (
-    <form onSubmit={handleSubmit} className="flex w-full max-w-sm flex-col gap-4">
-      <div>
-        <label htmlFor="email" className="mb-2 block text-[13px] font-bold text-ink">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <div className="flex flex-col gap-2">
+        <label htmlFor="email" className="text-sm font-semibold">
           メールアドレス
         </label>
         <input
@@ -55,19 +65,15 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           type="email"
           autoComplete="email"
           required
+          placeholder="you@example.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="carrip-field min-h-[48px] w-full rounded-xl border border-line px-4 py-2.5 text-[15px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15"
-          style={{
-            colorScheme: 'light',
-            backgroundColor: '#ffffff',
-            color: '#0f172a',
-            WebkitTextFillColor: '#0f172a',
-          }}
+          className={fieldClass}
+          style={fieldStyle}
         />
       </div>
-      <div>
-        <label htmlFor="password" className="mb-2 block text-[13px] font-bold text-ink">
+      <div className="flex flex-col gap-2">
+        <label htmlFor="password" className="text-sm font-semibold">
           パスワード
         </label>
         <input
@@ -78,49 +84,31 @@ export function AuthForm({ mode, redirectTo }: AuthFormProps) {
           minLength={6}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="carrip-field min-h-[48px] w-full rounded-xl border border-line px-4 py-2.5 text-[15px] shadow-[0_1px_2px_rgba(15,23,42,0.04)] outline-none transition hover:border-neutral-300 focus:border-brand focus:ring-4 focus:ring-brand/15"
-          style={{
-            colorScheme: 'light',
-            backgroundColor: '#ffffff',
-            color: '#0f172a',
-            WebkitTextFillColor: '#0f172a',
-          }}
+          className={fieldClass}
+          style={fieldStyle}
         />
+        {!isLogin && <p className="m-0 text-[13px] text-muted">6文字以上</p>}
       </div>
       {message && (
-        <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-medium text-red-700" role="alert">
+        <p
+          className="m-0 rounded-[10px] bg-[#f6e4dd] px-4 py-3 text-sm font-medium text-[#8a3f27]"
+          role="alert"
+        >
           {message}
         </p>
       )}
       <button
         type="submit"
         disabled={loading}
-        className="min-h-[48px] rounded-xl bg-brand px-5 py-3 text-[15px] font-bold text-white shadow-[0_1px_2px_rgba(15,23,42,0.08),0_4px_12px_rgba(15,138,126,0.25)] transition hover:bg-brand-dark focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25 active:scale-[0.99] disabled:opacity-50"
+        className="mt-1 min-h-[52px] rounded-[10px] bg-brand text-[15px] font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50"
       >
         {loading ? '処理中…' : isLogin ? 'ログイン' : '新規登録'}
       </button>
-      <p className="text-center text-sm text-muted">
-        {isLogin ? (
-          <>
-            アカウントをお持ちでない方は{' '}
-            <Link
-              href={`/signup?redirectTo=${encodeURIComponent(redirectTo)}`}
-              className="font-bold text-brand-dark underline-offset-4 hover:underline"
-            >
-              新規登録
-            </Link>
-          </>
-        ) : (
-          <>
-            すでにアカウントがある方は{' '}
-            <Link
-              href={`/login?redirectTo=${encodeURIComponent(redirectTo)}`}
-              className="font-bold text-brand-dark underline-offset-4 hover:underline"
-            >
-              ログイン
-            </Link>
-          </>
-        )}
+      <p className="m-0 border-t border-sunken pt-[18px] text-sm text-neutral-600">
+        {isLogin ? 'アカウントをお持ちでない方は ' : 'すでにアカウントがある方は '}
+        <Link href={otherHref} className="font-semibold">
+          {isLogin ? '新規登録' : 'ログイン'}
+        </Link>
       </p>
     </form>
   )

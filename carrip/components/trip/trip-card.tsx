@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { formatJapaneseDate, formatTripLength } from '@/lib/format'
+import { planDisplayName } from '@/lib/plan/display-name'
 import type { Tables } from '@/types/supabase'
 
 type TripCardProps = {
@@ -8,25 +10,35 @@ type TripCardProps = {
   >
 }
 
+const PHOTO_TONES = ['bg-photo-1', 'bg-photo-2', 'bg-photo-3', 'bg-photo-4']
+
+/** マイプラン一覧のカード（写真枠・日程・プラン名・出発地と行き先） */
 export function TripCard({ trip }: TripCardProps) {
+  const tone = PHOTO_TONES[trip.id.charCodeAt(0) % PHOTO_TONES.length]
+
   return (
     <li>
       <Link
         href={`/trips/${trip.id}`}
         prefetch={false}
-        className="carrip-panel group block h-full p-5 transition duration-200 hover:-translate-y-0.5 hover:border-teal-300 hover:shadow-[var(--shadow-raised)]"
+        className="group flex h-full flex-col overflow-hidden rounded-2xl border border-line bg-surface text-ink no-underline transition hover:border-muted"
       >
-        <p className="m-0 text-xs font-bold text-brand">
-          {trip.departure_date}
-        </p>
-        <p className="mt-1 mb-0 text-base font-bold text-ink">{trip.origin} 出発</p>
-        <p className="mt-1 mb-0 text-sm text-muted">
-          {trip.prefecture?.join('、')} · {trip.departure_date} · {trip.days}
-          日間 · {trip.people}人
-        </p>
-        <p className="mt-4 mb-0 text-[13px] font-bold text-brand-dark transition group-hover:translate-x-0.5">
-          詳細を見る →
-        </p>
+        <span className={`block aspect-[2/1] ${tone}`} aria-hidden />
+        <span className="flex flex-1 flex-col gap-1 p-6">
+          <span className="text-[13px] text-muted">
+            {formatJapaneseDate(trip.departure_date)} · {formatTripLength(trip.days)} ·{' '}
+            {trip.people}人
+          </span>
+          <span className="text-lg font-bold">
+            {planDisplayName(trip.prefecture ?? [], trip.days)}
+          </span>
+          <span className="text-sm text-ink-soft">
+            {trip.origin} 出発 · {trip.prefecture?.join('・')}
+          </span>
+          <span className="mt-4 border-t border-line pt-4 text-sm font-medium text-brand">
+            詳細を見る →
+          </span>
+        </span>
       </Link>
     </li>
   )

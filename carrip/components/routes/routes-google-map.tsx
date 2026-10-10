@@ -35,9 +35,11 @@ type RoutesGoogleMapProps = {
   onSelectRoute: (routeId: string) => void
   originLabel?: string
   onAuthFailure?: () => void
+  compact?: boolean
 }
 
 const MAP_CONTAINER_STYLE = { width: '100%', height: '380px' }
+const COMPACT_MAP_CONTAINER_STYLE = { width: '100%', height: '220px' }
 
 function buildBounds(routes: RouteCandidate[]): google.maps.LatLngBounds | undefined {
   if (typeof google === 'undefined') return undefined
@@ -135,6 +137,7 @@ export function RoutesGoogleMap({
   onSelectRoute,
   originLabel,
   onAuthFailure,
+  compact = false,
 }: RoutesGoogleMapProps) {
   const apiKey = getGoogleMapsApiKey()
   const [healthHint, setHealthHint] = useState<MapsHealthHint | null>(null)
@@ -275,7 +278,7 @@ export function RoutesGoogleMap({
   return (
     <div className="overflow-hidden rounded-lg border border-neutral-200 dark:border-neutral-800">
       <GoogleMap
-        mapContainerStyle={MAP_CONTAINER_STYLE}
+        mapContainerStyle={compact ? COMPACT_MAP_CONTAINER_STYLE : MAP_CONTAINER_STYLE}
         center={defaultCenter}
         zoom={8}
         onLoad={onMapLoad}
@@ -365,43 +368,47 @@ export function RoutesGoogleMap({
         ))}
       </GoogleMap>
 
-      <div className="flex flex-wrap gap-3 border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
-        {routes.map((route, index) => {
-          const color = getRouteColor(route.id, index)
-          const isSelected = route.id === selectedRouteId
+      {!compact && (
+        <>
+        <div className="flex flex-wrap gap-3 border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
+          {routes.map((route, index) => {
+            const color = getRouteColor(route.id, index)
+            const isSelected = route.id === selectedRouteId
 
-          return (
-            <button
-              key={route.id}
-              type="button"
-              onClick={() => onSelectRoute(route.id)}
-              className={`flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition ${
-                isSelected
-                  ? 'bg-neutral-100 font-medium dark:bg-neutral-800'
-                  : 'opacity-70 hover:opacity-100'
-              }`}
-            >
-              <span
-                className="inline-block h-2 w-6 rounded-full"
-                style={{ backgroundColor: color }}
-              />
-              案{index + 1}: {route.title}
-            </button>
-          )
-        })}
-      </div>
-
-      {selectedRoundTrip && (
-        <div className="border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
-          <RoundTripLegend />
+            return (
+              <button
+                key={route.id}
+                type="button"
+                onClick={() => onSelectRoute(route.id)}
+                className={`flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition ${
+                  isSelected
+                    ? 'bg-neutral-100 font-medium dark:bg-neutral-800'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
+              >
+                <span
+                  className="inline-block h-2 w-6 rounded-full"
+                  style={{ backgroundColor: color }}
+                />
+                案{index + 1}: {route.title}
+              </button>
+            )
+          })}
         </div>
-      )}
 
-      <p className="border-t border-neutral-200 px-3 py-2 text-xs text-neutral-500 dark:border-neutral-800">
-        Google マップ · 自動車ルート（NAVITIME）
-        {originLabel ? ` · 出発: ${originLabel}` : ''}
-        {selectedRoundTrip ? ' · 往復' : ''}
-      </p>
+        {selectedRoundTrip && (
+          <div className="border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
+            <RoundTripLegend />
+          </div>
+        )}
+
+        <p className="border-t border-neutral-200 px-3 py-2 text-xs text-neutral-500 dark:border-neutral-800">
+          Google マップ · 自動車ルート（NAVITIME）
+          {originLabel ? ` · 出発: ${originLabel}` : ''}
+          {selectedRoundTrip ? ' · 往復' : ''}
+        </p>
+        </>
+      )}
     </div>
   )
 }
