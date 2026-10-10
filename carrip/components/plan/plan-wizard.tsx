@@ -11,6 +11,7 @@ import { VehicleSelector } from '@/components/form/vehicle-selector'
 import { Stepper } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { formatGpsOrigin } from '@/lib/google/geocode-fallback'
 import { PLAN_STEPS, VEHICLE_PRESETS } from '@/lib/plan/constants'
 import {
   createPlanId,
@@ -81,6 +82,7 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
   const [step, setStep] = useState(initialStep)
   const [form, setForm] = useState<TripFormValues>(defaultTripFormValues())
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [locating, setLocating] = useState(false)
 
   const stepErrors = useMemo(() => validateStep(step, form), [step, form])
 
@@ -116,14 +118,36 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
   }
 
   function handleGps() {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setErrors({
+        origin: 'このブラウザは位置情報に対応していません。出発地を入力してください',
+      })
+      return
+    }
+
+    setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      () => {
-        updateForm({ origin: '現在地（GPS）' })
+      (position) => {
+        setLocating(false)
+        setErrors({})
+        // 取得した座標を出発地に入れ、ルート計算でもこの座標を使う
+        updateForm({
+          origin: formatGpsOrigin(
+            position.coords.latitude,
+            position.coords.longitude
+          ),
+        })
       },
-      () => {
-        setErrors({ origin: '位置情報の取得に失敗しました' })
-      }
+      (error) => {
+        setLocating(false)
+        setErrors({
+          origin:
+            error.code === error.PERMISSION_DENIED
+              ? '位置情報の利用が許可されていません。出発地を入力してください'
+              : '位置情報の取得に失敗しました。出発地を入力してください',
+        })
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
     )
   }
 
@@ -190,8 +214,13 @@ export function PlanWizard({ initialStep }: PlanWizardProps) {
               helperText="住所候補から選択するか、地名を入力してください"
               onChange={(origin) => updateForm({ origin })}
             />
-            <Button variant="secondary" size="sm" onClick={handleGps}>
-              現在地を取得（GPS）
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleGps}
+              isLoading={locating}
+            >
+              {locating ? '現在地を取得中…' : '現在地を取得（GPS）'}
             </Button>
             <DateRangePicker
               departureDate={form.departureDate}
