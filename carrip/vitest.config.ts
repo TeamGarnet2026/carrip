@@ -20,6 +20,13 @@ export default defineConfig({
       ],
       reporter: ['text-summary', 'text', 'html', 'json-summary'],
       reportsDirectory: './coverage',
+      // 目標 80%（#696）。下回ったら CI を失敗させる
+      thresholds: {
+        lines: 80,
+        statements: 80,
+        functions: 80,
+        branches: 80,
+      },
     },
   },
   resolve: {
