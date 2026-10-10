@@ -15,6 +15,8 @@ export default defineConfig({
         'lib/**/types.ts',
         // 開発用の API テスト画面の定義
         'lib/dev/**',
+        // テスト用ヘルパー
+        'lib/test-utils/**',
       ],
       reporter: ['text-summary', 'text', 'html', 'json-summary'],
       reportsDirectory: './coverage',
