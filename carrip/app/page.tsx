@@ -3,6 +3,9 @@ import { AppShell } from '@/components/layout/app-shell'
 import { Button } from '@/components/ui/button'
 import { BookmarkIcon, RouteIcon, WalletIcon } from '@/components/ui/icons'
 
+const HERO_IMAGE =
+  'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&q=70'
+
 const STEPS = [
   {
     icon: RouteIcon,
@@ -26,6 +29,19 @@ export default function Home() {
     <AppShell variant="entry">
       <div className="grid gap-6">
         <section className="carrip-hero">
+          {/* 画像最適化の設定を増やさずに済むよう、Unsplash 側でリサイズした画像を srcSet で渡す */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            className="carrip-hero-img"
+            src={`${HERO_IMAGE}&w=1200`}
+            srcSet={[640, 960, 1200, 1600]
+              .map((width) => `${HERO_IMAGE}&w=${width} ${width}w`)
+              .join(', ')}
+            sizes="(max-width: 960px) 100vw, 1136px"
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+          />
           <div className="grid max-w-2xl gap-5">
             <p className="carrip-glass m-0 w-fit rounded-full px-3 py-1 text-xs sm:px-4 sm:py-1.5 sm:text-[13px] font-bold text-white/90">
               燃料費・高速料金・駐車料・入場料をまとめて計算

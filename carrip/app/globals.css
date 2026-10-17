@@ -5,13 +5,13 @@
 
 @theme {
   --color-ink: #0f172a;
-  --color-muted: #64748b;
+  --color-muted: #5b6b80;
   --color-line: #e2e8f0;
   --color-bg: #f4f6f9;
   --color-surface: #ffffff;
   --color-soft: #f8fafc;
-  --color-brand: #0f8a7e;
-  --color-brand-dark: #0b6e65;
+  --color-brand: #0c7c71;
+  --color-brand-dark: #09655c;
   --color-brand-soft: #e8f6f3;
   --color-accent: #f59e0b;
   --color-sidebar: #ffffff;
@@ -23,8 +23,8 @@
   --color-teal-300: #74cdbd;
   --color-teal-400: #3fb2a1;
   --color-teal-500: #1c9a8b;
-  --color-teal-600: #0f8a7e;
-  --color-teal-700: #0b6e65;
+  --color-teal-600: #0c7c71;
+  --color-teal-700: #09655c;
   --color-teal-800: #0d5751;
   --color-teal-900: #0f4843;
   --color-teal-950: #032a27;
@@ -268,6 +268,7 @@
   /* トップ画面のメインビジュアル（ワークスペース内のカードとして表示） */
   .carrip-hero {
     position: relative;
+    isolation: isolate;
     overflow: hidden;
     display: grid;
     align-content: end;
@@ -275,12 +276,28 @@
     padding: 48px;
     border-radius: 24px;
     color: #ffffff;
+    background: #0b1f24;
     box-shadow: var(--shadow-raised);
+  }
+
+  /* 写真は <img> で読み込み（LCP 改善のため早期に取得させる）、上にグラデーションを重ねる */
+  .carrip-hero-img {
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .carrip-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
     background:
-      radial-gradient(120% 90% at 0% 100%, rgba(15, 138, 126, 0.6), transparent 60%),
-      linear-gradient(100deg, rgba(2, 6, 23, 0.86) 0%, rgba(2, 6, 23, 0.55) 55%, rgba(2, 6, 23, 0.2) 100%),
-      url("https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=80")
-        center / cover;
+      radial-gradient(120% 90% at 0% 100%, rgba(12, 124, 113, 0.6), transparent 60%),
+      linear-gradient(100deg, rgba(2, 6, 23, 0.86) 0%, rgba(2, 6, 23, 0.55) 55%, rgba(2, 6, 23, 0.2) 100%);
   }
 
   .carrip-glass {
