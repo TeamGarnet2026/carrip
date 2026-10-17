@@ -14,13 +14,20 @@ import { Button } from '@/components/ui/button'
 import { CheckIcon, CloseIcon, PlusIcon, SearchIcon } from '@/components/ui/icons'
 import { Spinner } from '@/components/ui/spinner'
 import { formatJapaneseDate, formatTripLength } from '@/lib/format'
-import { VEHICLE_PRESETS } from '@/lib/plan/constants'
+import { PREFERENCE_OPTIONS, VEHICLE_PRESETS } from '@/lib/plan/constants'
 import {
   loadPlanSession,
   planStorageKey,
   savePlanSession,
 } from '@/lib/plan/storage'
 import type { PlanSession, StopOrderMode, TripFormValues } from '@/lib/plan/types'
+import {
+  defaultSpotSelectMode,
+  pickRecommendedSpots,
+  recommendedSpotCount,
+  shouldAutoPick,
+  type SpotSelectMode,
+} from '@/lib/poi/recommend'
 import type { SpotCandidate } from '@/lib/poi/suggest'
 import { MAX_SELECTED_SPOTS } from '@/lib/routes/schema'
 import type { RouteCandidate, RouteStop } from '@/lib/routes/types'
@@ -145,6 +152,12 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
     [editedSelected, session]
   )
   const orderMode = editedOrderMode ?? session?.orderMode ?? 'auto'
+  const [editedSelectMode, setSelectMode] = useState<SpotSelectMode | null>(null)
+  const [editedAutoPicked, setAutoPicked] = useState<boolean | null>(null)
+  const selectMode =
+    editedSelectMode ??
+    defaultSpotSelectMode(session?.spotSelectMode, session?.spots?.length ?? 0)
+  const autoPicked = editedAutoPicked ?? session?.spotsAutoPicked ?? false
   const [suggestions, setSuggestions] = useState<ListState>({
     ...EMPTY_LIST,
     loading: true,
@@ -187,6 +200,35 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
               : null,
           places: data.places,
         })
+
+        const current = loadPlanSession(planId)
+        if (!current || data.places.length === 0) return
+        const currentCount = current.spots?.length ?? 0
+        const mode = defaultSpotSelectMode(current.spotSelectMode, currentCount)
+        if (
+          !shouldAutoPick({
+            mode,
+            selectedCount: currentCount,
+            autoPicked: current.spotsAutoPicked ?? false,
+          })
+        ) {
+          return
+        }
+        const picked = pickRecommendedSpots(
+          data.places as SpotCandidate[],
+          recommendedSpotCount(current.form.days)
+        ).map(toRouteStop)
+        setSelected(picked)
+        setAutoPicked(true)
+        // 行き先が変わったら、以前計算したルートは使えない
+        savePlanSession({
+          ...current,
+          spots: picked,
+          spotSelectMode: mode,
+          spotsAutoPicked: true,
+          routes: undefined,
+          selectedRouteId: undefined,
+        })
       })
       .catch((error: unknown) => {
         if (error instanceof DOMException && error.name === 'AbortError') return
@@ -194,7 +236,7 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
       })
 
     return () => controller.abort()
-  }, [prefectures, preferences])
+  }, [prefectures, preferences, planId])
 
   const selectedIds = useMemo(
     () => new Set(selected.map((stop) => stop.place_id)),
@@ -202,7 +244,11 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
   )
   const isFull = selected.length >= MAX_SELECTED_SPOTS
 
-  function persist(nextSelected: RouteStop[], nextOrderMode: StopOrderMode) {
+  function persist(
+    nextSelected: RouteStop[],
+    nextOrderMode: StopOrderMode,
+    extra: { spotSelectMode?: SpotSelectMode; spotsAutoPicked?: boolean } = {}
+  ) {
     const current = loadPlanSession(planId)
     if (!current) return
     // 行き先が変わったら、以前計算したルートは使えない
@@ -210,19 +256,45 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
       ...current,
       spots: nextSelected,
       orderMode: nextOrderMode,
+      spotSelectMode: extra.spotSelectMode ?? selectMode,
+      spotsAutoPicked: extra.spotsAutoPicked ?? autoPicked,
       routes: undefined,
       selectedRouteId: undefined,
     })
   }
 
+  /** 利用者が行き先を編集した（自動選択の結果ではなくなる） */
   function updateSelected(nextSelected: RouteStop[]) {
     setSelected(nextSelected)
-    persist(nextSelected, orderMode)
+    setAutoPicked(false)
+    persist(nextSelected, orderMode, { spotsAutoPicked: false })
   }
 
   function updateOrderMode(nextOrderMode: StopOrderMode) {
     setOrderMode(nextOrderMode)
     persist(selected, nextOrderMode)
+  }
+
+  /** おすすめの上位を、旅行日数に応じた件数だけ選択済みにする */
+  function applyRecommendations(places: SpotCandidate[]) {
+    if (!session) return
+    const picked = pickRecommendedSpots(places, recommendedSpotCount(session.form.days)).map(
+      toRouteStop
+    )
+    setSelected(picked)
+    setSelectMode('auto')
+    setAutoPicked(true)
+    persist(picked, orderMode, { spotSelectMode: 'auto', spotsAutoPicked: true })
+  }
+
+  function changeSelectMode(next: SpotSelectMode) {
+    if (next === selectMode) return
+    setSelectMode(next)
+    if (next === 'auto' && selected.length === 0 && suggestions.places.length > 0) {
+      applyRecommendations(suggestions.places)
+      return
+    }
+    persist(selected, orderMode, { spotSelectMode: next })
   }
 
   function addSpot(spot: SpotCandidate) {
@@ -359,6 +431,20 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
             <span className="md:hidden">{areaName}で行きたい場所</span>
             <span className="hidden md:inline">行き先を探す</span>
           </h1>
+          <SelectModeControl
+            mode={selectMode}
+            autoPicked={autoPicked}
+            selectedCount={selected.length}
+            recommendedCount={recommendedSpotCount(session.form.days)}
+            preferenceLabels={(filter ? [filter] : session.form.preferences)
+              .map((id) => PREFERENCE_OPTIONS.find((option) => option.id === id)?.label)
+              .filter((label): label is (typeof PREFERENCE_OPTIONS)[number]['label'] => !!label)}
+            areaName={areaName}
+            canRepick={!suggestions.loading && suggestions.places.length > 0}
+            onChangeMode={changeSelectMode}
+            onRepick={() => applyRecommendations(suggestions.places)}
+          />
+
           <form onSubmit={handleSearch} role="search" className="relative">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-4 h-5 w-5 -translate-y-1/2 text-muted" />
             <input
@@ -562,6 +648,85 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
           料金を計算
         </Button>
       </div>
+    </div>
+  )
+}
+
+type SelectModeControlProps = {
+  mode: SpotSelectMode
+  autoPicked: boolean
+  selectedCount: number
+  recommendedCount: number
+  preferenceLabels: string[]
+  areaName: string
+  canRepick: boolean
+  onChangeMode: (mode: SpotSelectMode) => void
+  onRepick: () => void
+}
+
+/** 行き先の選び方（おすすめで自動選択 / 自分で選ぶ）と、自動選択の状態 */
+function SelectModeControl({
+  mode,
+  autoPicked,
+  selectedCount,
+  recommendedCount,
+  preferenceLabels,
+  areaName,
+  canRepick,
+  onChangeMode,
+  onRepick,
+}: SelectModeControlProps) {
+  const theme = preferenceLabels.length > 0 ? `${preferenceLabels.join('・')}の` : ''
+
+  return (
+    <div className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4">
+      <div role="radiogroup" aria-label="行き先の選び方" className="flex gap-0.5 rounded-[10px] bg-segment p-1">
+        {(
+          [
+            { id: 'auto', label: 'おすすめで自動選択' },
+            { id: 'manual', label: '自分で選ぶ' },
+          ] as const
+        ).map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            role="radio"
+            aria-checked={mode === item.id}
+            onClick={() => onChangeMode(item.id)}
+            className={`min-h-10 flex-1 rounded-lg px-3 text-[13px] whitespace-nowrap transition ${
+              mode === item.id ? 'bg-surface font-semibold text-ink' : 'text-ink-soft hover:text-ink'
+            }`}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === 'auto' ? (
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2" aria-live="polite">
+          <p className="m-0 text-[13px] leading-[1.7] text-ink-soft">
+            {autoPicked && selectedCount > 0
+              ? `${areaName}の${theme}おすすめから${selectedCount}か所を自動で選びました。外したり、下の一覧から追加したりできます。`
+              : selectedCount > 0
+                ? '自動で選んだ行き先を編集しています。'
+                : `${areaName}の${theme}おすすめから${recommendedCount}か所を自動で選びます。`}
+          </p>
+          {selectedCount > 0 && !autoPicked && (
+            <button
+              type="button"
+              onClick={onRepick}
+              disabled={!canRepick}
+              className="min-h-9 shrink-0 rounded-lg border border-line-strong bg-surface px-3 text-[13px] font-medium hover:bg-soft disabled:opacity-40"
+            >
+              おすすめで選び直す
+            </button>
+          )}
+        </div>
+      ) : (
+        <p className="m-0 text-[13px] leading-[1.7] text-ink-soft">
+          検索やおすすめの一覧から、行きたい場所を1つずつ追加してください。
+        </p>
+      )}
     </div>
   )
 }
