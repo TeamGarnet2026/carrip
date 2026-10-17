@@ -17,6 +17,21 @@ export type RouteStop = {
   parking_yen?: number
   parking_source?: ParkingSource
   admission_yen_per_person?: number
+  /** Google 評価（5点満点）。行き先選択で選んだ地点のみ */
+  rating?: number
+  /** Google のレビュー件数 */
+  user_rating_count?: number
+}
+
+/** スコアの内訳（各項目 0〜1） */
+export type RouteScoreBreakdown = {
+  cost: number
+  time: number
+  poi: number
+  scenic: number
+  /** ペナルティ適用前の加重和 */
+  weighted: number
+  over_budget: boolean
 }
 
 export type CostBreakdown = {
@@ -62,6 +77,9 @@ export type RouteCandidate = {
   departure_time?: string
   arrival_time?: string
   round_trip?: boolean
+  /** 総合スコア（0〜1、高いほどおすすめ）。lib/routes/scoring.ts で計算 */
+  score?: number
+  score_breakdown?: RouteScoreBreakdown
 }
 
 export type RouteGenerateRequest = {
