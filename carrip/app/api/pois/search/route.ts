@@ -3,6 +3,7 @@ import { ZodError } from 'zod'
 import { enforceRateLimit } from '@/lib/api/rate-limit'
 import { getCachedPoiSearch, setCachedPoiSearch } from '@/lib/cache/poi-cache'
 import { isGoogleCloudConfigured } from '@/lib/google/config'
+import { FREE_PLAN_ENDED_MESSAGE, PlacesQuotaExceededError } from '@/lib/google/quota'
 import type { PoiPlace } from '@/lib/google/types'
 import {
   searchRestAreas,
@@ -77,6 +78,14 @@ export async function GET(request: Request) {
       return NextResponse.json(
         { error: '入力内容に誤りがあります', details: error.flatten() },
         { status: 400 }
+      )
+    }
+
+    if (error instanceof PlacesQuotaExceededError) {
+      console.warn('GET /api/pois/search: Places API quota exceeded')
+      return NextResponse.json(
+        { error: FREE_PLAN_ENDED_MESSAGE, code: 'quota_exceeded' },
+        { status: 429 }
       )
     }
 
