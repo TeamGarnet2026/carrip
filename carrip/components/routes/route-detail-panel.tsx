@@ -11,6 +11,7 @@ import {
   isRoundTripRoute,
 } from '@/lib/maps/round-trip-display'
 import { buildItinerary } from '@/lib/routes/itinerary'
+import { deltaTextClass, formatYenDelta, type CostDiff } from '@/lib/routes/cost-diff'
 import type { RouteCandidate, RouteStop } from '@/lib/routes/types'
 
 type RouteDetailPanelProps = {
@@ -28,6 +29,8 @@ type RouteDetailPanelProps = {
   /** 条件入力で決めた出発時刻（ルートに時刻がないとき使う） */
   departureTime?: string
   fuelKmL?: number
+  /** 直前の編集からの費用差分（増加は赤・減少は緑で表示） */
+  costDiff?: CostDiff | null
 }
 
 /** 選んだルートの詳細（地図・総費用・費用4項目・立ち寄り順） */
@@ -44,6 +47,7 @@ export function RouteDetailPanel({
   map,
   departureTime,
   fuelKmL,
+  costDiff = null,
 }: RouteDetailPanelProps) {
   const [showAddList, setShowAddList] = useState(false)
 
@@ -94,6 +98,7 @@ export function RouteDetailPanel({
             </p>
             <p className="mt-1 mb-0 text-[34px] leading-none font-semibold tracking-[-0.03em] tabular-nums">
               {formatYen(route.total_cost)}
+              <CostDelta delta={costDiff?.total} />
             </p>
           </div>
           <dl className="m-0 flex gap-8 text-[13px]">
@@ -138,7 +143,7 @@ export function RouteDetailPanel({
           )}
         </div>
 
-        <CostTiles route={route} people={people} fuelKmL={fuelKmL} />
+        <CostTiles route={route} people={people} fuelKmL={fuelKmL} diff={costDiff} />
 
         <section>
           <div className="mb-3 flex items-center justify-between gap-3">
@@ -192,5 +197,14 @@ export function RouteDetailPanel({
         </section>
       </div>
     </div>
+  )
+}
+
+function CostDelta({ delta }: { delta?: number }) {
+  if (delta == null || delta === 0) return null
+  return (
+    <span className={`ml-3 text-base font-medium tracking-normal ${deltaTextClass(delta)}`}>
+      {formatYenDelta(delta)}
+    </span>
   )
 }

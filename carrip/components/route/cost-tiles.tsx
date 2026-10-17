@@ -1,5 +1,6 @@
 import { COST_ITEMS } from '@/components/route/cost-bar'
 import { formatYen } from '@/lib/format'
+import { deltaTextClass, formatYenDelta, type CostDiff } from '@/lib/routes/cost-diff'
 import { describeCostSources } from '@/lib/routes/cost-sources'
 import type { RouteCandidate } from '@/lib/routes/types'
 
@@ -8,10 +9,12 @@ type CostTilesProps = {
   people: number
   /** 車の燃費（km/L）。わかるときだけ燃料費の補足に出す */
   fuelKmL?: number
+  /** 直前の編集からの差分。指定すると増加を赤・減少を緑で表示する */
+  diff?: CostDiff | null
 }
 
 /** 燃料費・高速・駐車・入場の4つのタイル（金額 + 根拠の一言） */
-export function CostTiles({ route, people, fuelKmL }: CostTilesProps) {
+export function CostTiles({ route, people, fuelKmL, diff }: CostTilesProps) {
   const sources = describeCostSources(route.cost_sources)
   const touristStops = route.stops.filter((stop) => !stop.is_rest_stop).length
   const notes: Record<(typeof COST_ITEMS)[number]['key'], string> = {
@@ -33,6 +36,11 @@ export function CostTiles({ route, people, fuelKmL }: CostTilesProps) {
           </dt>
           <dd className="mt-2 mb-0 text-xl font-semibold tabular-nums">
             {formatYen(route.cost_breakdown[item.key])}
+            {diff != null && diff[item.key] !== 0 && (
+              <span className={`ml-2 text-xs font-medium ${deltaTextClass(diff[item.key])}`}>
+                {formatYenDelta(diff[item.key])}
+              </span>
+            )}
           </dd>
           <dd className="mt-1 mb-0 truncate text-xs text-muted">{notes[item.key]}</dd>
         </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -23,6 +24,7 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
   const [error, setError] = useState<string | null>(null)
   const [share, setShare] = useState<ShareResponse | null>(null)
   const [copied, setCopied] = useState(false)
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
 
   useEffect(() => {
     async function createShare() {
@@ -54,6 +56,22 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
 
     void createShare()
   }, [planId, routeId])
+
+  // 共有URLを外部サービスに送らないよう、QRコードはブラウザ内で生成する
+  useEffect(() => {
+    if (!share) return
+    let cancelled = false
+    QRCode.toDataURL(share.share_url, { width: 360, margin: 1 })
+      .then((dataUrl) => {
+        if (!cancelled) setQrDataUrl(dataUrl)
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [share])
 
   async function handleCopy() {
     if (!share) return
@@ -89,7 +107,6 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
 
   if (!share) return null
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=360x360&data=${encodeURIComponent(share.share_url)}`
   const expires = formatJapaneseDate(share.expires_at.slice(0, 10)).replace(/（.）$/, '')
 
   return (
@@ -137,19 +154,35 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
       </section>
 
       <aside className="hidden flex-col items-center gap-5 rounded-2xl border border-line bg-surface p-10 text-center lg:flex">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={qrUrl}
-          alt="共有URLのQRコード"
-          width={200}
-          height={200}
-          className="rounded-xl border border-dashed border-line-strong p-3"
-        />
+        {qrDataUrl ? (
+          // data URL のため next/image の最適化対象外
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={qrDataUrl}
+            alt="共有URLのQRコード"
+            width={200}
+            height={200}
+            className="rounded-xl border border-dashed border-line-strong p-3"
+          />
+        ) : (
+          <div className="grid h-[200px] w-[200px] place-items-center rounded-xl border border-dashed border-line-strong text-[13px] text-muted">
+            QRコードを生成中…
+          </div>
+        )}
         <p className="m-0 text-sm leading-[1.8] text-ink-soft">
           その場にいるメンバーは、
           <br />
           スマホのカメラで読み取れます。
         </p>
+        {qrDataUrl && (
+          <a
+            href={qrDataUrl}
+            download={`carrip-share-${share.short_code}.png`}
+            className="text-sm font-medium"
+          >
+            QRコードをダウンロード
+          </a>
+        )}
       </aside>
     </div>
   )

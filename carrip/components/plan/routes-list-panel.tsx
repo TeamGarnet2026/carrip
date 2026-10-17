@@ -21,6 +21,12 @@ import { formatJapaneseDate, formatYen } from '@/lib/format'
 import { GENERATION_STEPS } from '@/lib/plan/constants'
 import { loadPlanSession, planStorageKey, savePlanSession } from '@/lib/plan/storage'
 import { toRouteGenerateRequest } from '@/lib/plan/types'
+import {
+  diffRouteCosts,
+  formatYenDelta,
+  hasCostChange,
+  type CostDiff,
+} from '@/lib/routes/cost-diff'
 import { recalculateRouteCostsLocally } from '@/lib/routes/cost-sources'
 import type {
   RouteCandidate,
@@ -59,9 +65,12 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
   const [originLabel, setOriginLabel] = useState<string>('')
   const [sessionMissing, setSessionMissing] = useState(false)
   const [recalculating, setRecalculating] = useState(false)
-  const [costDelta, setCostDelta] = useState<number | null>(null)
   // スマホではルート一覧 → 詳細の2画面に分ける
   const [mobileDetail, setMobileDetail] = useState(false)
+  const [costDiff, setCostDiff] = useState<{
+    routeId: string
+    diff: CostDiff
+  } | null>(null)
 
   const generateRoutes = useCallback(
     async (mode: GenerateMode) => {
@@ -172,6 +181,9 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
       ? Math.ceil(session.form.budgetPerPerson / people)
       : session?.form.budgetPerPerson
 
+  const selectedCostDiff =
+    costDiff != null && costDiff.routeId === selectedRouteId ? costDiff.diff : null
+
   const overBudget =
     budgetPerPerson != null &&
     selectedRoute != null &&
@@ -179,7 +191,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
 
   function handleSelectRoute(routeId: string) {
     setSelectedRouteId(routeId)
-    setCostDelta(null)
+    setCostDiff(null)
     const current = loadPlanSession(planId)
     if (current) {
       savePlanSession({ ...current, selectedRouteId: routeId })
@@ -200,8 +212,8 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
         const updated = next.routes.find((r) => r.id === routeId)
 
         if (previous && updated) {
-          const delta = updated.total_cost - previous.total_cost
-          setCostDelta(delta !== 0 ? delta : null)
+          const diff = diffRouteCosts(previous, updated)
+          setCostDiff(hasCostChange(diff) ? { routeId, diff } : null)
         }
 
         const session = loadPlanSession(planId)
@@ -412,17 +424,24 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
         </p>
       )}
 
-      {costDelta != null && (
+      {selectedCostDiff && (
         <p
           role="status"
           className={`m-0 rounded-xl px-4 py-3 text-sm font-medium ${
-            costDelta > 0 ? 'bg-[#f6e4dd] text-[#8a3f27]' : 'bg-brand-soft text-brand'
+            selectedCostDiff.total > 0
+              ? 'bg-[#f6e4dd] text-[#8a3f27]'
+              : selectedCostDiff.total < 0
+                ? 'bg-brand-soft text-brand'
+                : 'bg-soft text-ink-soft'
           }`}
         >
-          変更により費用が{' '}
-          {costDelta > 0
-            ? `+${costDelta.toLocaleString('ja-JP')}円 増えました`
-            : `−${Math.abs(costDelta).toLocaleString('ja-JP')}円 減りました`}
+          {selectedCostDiff.total > 0
+            ? `変更により費用が ${formatYenDelta(selectedCostDiff.total)} 増えました`
+            : selectedCostDiff.total < 0
+              ? `変更により費用が ${formatYenDelta(selectedCostDiff.total)} 減りました`
+              : '変更により費用の内訳が変わりました（合計は変わりません）'}
+          {selectedCostDiff.per_person !== 0 &&
+            `（1人あたり ${formatYenDelta(selectedCostDiff.per_person)}）`}
         </p>
       )}
 
@@ -473,6 +492,7 @@ export function RoutesListPanel({ planId }: RoutesListPanelProps) {
               map={<div className="hidden md:block">{renderMap(false)}</div>}
               departureTime={session?.form.options.departureTime}
               fuelKmL={session?.form.vehicle.fuel_km_l}
+              costDiff={selectedCostDiff}
             />
           </div>
         )}

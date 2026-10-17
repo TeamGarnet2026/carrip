@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { CheckIcon, LocateIcon } from '@/components/ui/icons'
 import { Input } from '@/components/ui/input'
 import { formatJapaneseDate, formatTripLength } from '@/lib/format'
+import { formatGpsOrigin } from '@/lib/google/geocode-fallback'
 import {
   PLAN_STEPS,
   PREFERENCE_OPTIONS,
@@ -116,6 +117,7 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
   const [step, setStep] = useState(initialStep)
   const [form, setForm] = useState<TripFormValues>(() => buildInitialForm(initialValues))
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [locating, setLocating] = useState(false)
 
   const stepErrors = useMemo(() => validateStep(step, form), [step, form])
 
@@ -155,14 +157,36 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
   }
 
   function handleGps() {
-    if (!navigator.geolocation) return
+    if (!navigator.geolocation) {
+      setErrors({
+        origin: 'このブラウザは位置情報に対応していません。出発地を入力してください',
+      })
+      return
+    }
+
+    setLocating(true)
     navigator.geolocation.getCurrentPosition(
-      () => {
-        updateForm({ origin: '現在地（GPS）' })
+      (position) => {
+        setLocating(false)
+        setErrors({})
+        // 取得した座標を出発地に入れ、ルート計算でもこの座標を使う
+        updateForm({
+          origin: formatGpsOrigin(
+            position.coords.latitude,
+            position.coords.longitude
+          ),
+        })
       },
-      () => {
-        setErrors({ origin: '位置情報の取得に失敗しました' })
-      }
+      (error) => {
+        setLocating(false)
+        setErrors({
+          origin:
+            error.code === error.PERMISSION_DENIED
+              ? '位置情報の利用が許可されていません。出発地を入力してください'
+              : '位置情報の取得に失敗しました。出発地を入力してください',
+        })
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
     )
   }
 
@@ -237,10 +261,12 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
                   <button
                     type="button"
                     onClick={handleGps}
-                    className="flex min-h-[52px] items-center justify-center gap-2 rounded-[10px] border border-line-strong bg-surface px-5 text-[15px] whitespace-nowrap text-ink transition hover:bg-soft sm:mt-[30px]"
+                    disabled={locating}
+                    aria-busy={locating}
+                    className="flex min-h-[52px] items-center justify-center gap-2 rounded-[10px] border border-line-strong bg-surface px-5 text-[15px] whitespace-nowrap text-ink transition hover:bg-soft disabled:opacity-60 sm:mt-[30px]"
                   >
                     <LocateIcon className="h-4 w-4" />
-                    現在地を使う
+                    {locating ? '現在地を取得中…' : '現在地を使う'}
                   </button>
                 </div>
               </div>

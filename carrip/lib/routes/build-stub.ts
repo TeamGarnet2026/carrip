@@ -3,6 +3,7 @@ import {
   COST_FOCUSED_ROUTE_ID,
   CUSTOM_ROUTE_ID,
 } from '@/lib/routes/cost-focused-plan'
+import { scoreRoutes } from '@/lib/routes/scoring'
 import type {
   RouteGenerateRequest,
   RouteSearchResult,
@@ -83,7 +84,8 @@ export function buildRoutesStub(input: {
 
   return {
     generated_at: new Date().toISOString(),
-    routes: ROUTE_VARIANTS.map(({ id, title }, index) => {
+    routes: scoreRoutes(
+      ROUTE_VARIANTS.map(({ id, title }, index) => {
       const factor = [1.15, 0.85, 1.0][index]
       const directRoute = id !== CUSTOM_ROUTE_ID
       const stops = directRoute ? [] : customStops
@@ -142,6 +144,8 @@ export function buildRoutesStub(input: {
         cost_per_person: Math.round(totalCost / request.people),
         round_trip: roundTrip,
       }
-    }),
+      }),
+      request
+    ),
   }
 }
