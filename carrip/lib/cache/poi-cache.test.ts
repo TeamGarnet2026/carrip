@@ -27,6 +27,7 @@ const {
 } = await import('@/lib/cache/poi-cache')
 const { getCachedTollPrice, setCachedTollPrice } = await import('@/lib/prices/toll-cache')
 const { suggestTouristSpots, toSpotCandidate } = await import('@/lib/poi/suggest')
+const { PlacesQuotaExceededError } = await import('@/lib/google/quota')
 
 function place(id: string, lat = 35, lng = 135.7): PoiPlace {
   return { id, name: id, address: '京都府', lat, lng, rating: 4.5, userRatingCount: 100 }
@@ -113,7 +114,11 @@ describe('suggestTouristSpots', () => {
   it('returns cached places without calling the Places API', async () => {
     await setCachedPlacesByPrefecture('奈良県', ['view'], [place('nara')])
     const result = await suggestTouristSpots(['奈良県'], ['view'])
-    expect(result).toEqual({ places: [place('nara')], usedFallback: false })
+    expect(result).toEqual({
+      places: [place('nara')],
+      usedFallback: false,
+      quotaExceeded: false,
+    })
     expect(searchTouristSpots).not.toHaveBeenCalled()
   })
 
@@ -131,14 +136,20 @@ describe('suggestTouristSpots', () => {
   it('returns no places (without caching) when the API finds nothing', async () => {
     searchTouristSpots.mockResolvedValueOnce([])
     const result = await suggestTouristSpots(['鳥取県'])
-    expect(result).toEqual({ places: [], usedFallback: false })
+    expect(result).toEqual({ places: [], usedFallback: false, quotaExceeded: false })
     await expect(getCachedPlacesByPrefecture('鳥取県')).resolves.toBeNull()
   })
 
   it('reports a fallback when the Places API fails', async () => {
-    searchTouristSpots.mockRejectedValueOnce(new Error('quota'))
+    searchTouristSpots.mockRejectedValueOnce(new Error('network'))
     const result = await suggestTouristSpots(['島根県'])
-    expect(result).toEqual({ places: [], usedFallback: true })
+    expect(result).toEqual({ places: [], usedFallback: true, quotaExceeded: false })
+  })
+
+  it('reports when the Places API daily quota is exhausted', async () => {
+    searchTouristSpots.mockRejectedValueOnce(new PlacesQuotaExceededError('RESOURCE_EXHAUSTED'))
+    const result = await suggestTouristSpots(['島根県'])
+    expect(result).toEqual({ places: [], usedFallback: true, quotaExceeded: true })
   })
 })
 

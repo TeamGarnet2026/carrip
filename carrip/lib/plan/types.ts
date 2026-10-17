@@ -36,6 +36,10 @@ export type PlanSession = {
   /** 行き先選択画面で選んだ場所（選んだ順） */
   spots?: RouteStop[]
   orderMode?: StopOrderMode
+  /** 行き先の選び方（おすすめで自動選択 / 自分で選ぶ） */
+  spotSelectMode?: 'auto' | 'manual'
+  /** spots がおすすめから自動で選んだまま（編集していない）なら true */
+  spotsAutoPicked?: boolean
   routes?: RouteSearchResponse
   selectedRouteId?: string
   savedTripId?: string

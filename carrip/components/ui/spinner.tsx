@@ -13,7 +13,7 @@ export function Spinner({ size = 'md', label = '読み込み中' }: SpinnerProps
   return (
     <div className="flex flex-col items-center gap-3" role="status">
       <span
-        className={`animate-[carrip-spin_1s_linear_infinite] rounded-full border-teal-100 border-t-brand ${sizeClasses[size]}`}
+        className={`animate-[carrip-spin_1s_linear_infinite] rounded-full border-line border-t-brand ${sizeClasses[size]}`}
         aria-hidden
       />
       <span className="sr-only">{label}</span>

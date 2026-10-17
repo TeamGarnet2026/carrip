@@ -1,4 +1,5 @@
 import { getGoogleCloudApiKey } from '@/lib/google/config'
+import { placesApiError } from '@/lib/google/quota'
 import type { PoiPlace } from '@/lib/google/types'
 
 type PlacesSearchResponse = {
@@ -92,7 +93,7 @@ export async function searchPlacesByText(
 
   if (!response.ok) {
     const detail = await response.text()
-    throw new Error(`Places API エラー (${response.status}): ${detail}`)
+    throw placesApiError(response.status, detail)
   }
 
   const data = (await response.json()) as PlacesSearchResponse

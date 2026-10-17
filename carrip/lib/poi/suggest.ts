@@ -3,6 +3,7 @@ import {
   setCachedPlacesByPrefecture,
 } from '@/lib/cache/poi-cache'
 import { searchTouristSpots } from '@/lib/google/places'
+import { PlacesQuotaExceededError } from '@/lib/google/quota'
 import type { PoiPlace } from '@/lib/google/types'
 import { MIN_POI_SPACING_KM, thinNearbyPlaces } from '@/lib/maps/route-corridor'
 
@@ -38,6 +39,8 @@ export type SuggestResult = {
   places: PoiPlace[]
   /** Places API が使えず、一部またはすべての候補を取得できなかった */
   usedFallback: boolean
+  /** Places API の利用上限に達していて、取得できなかった候補がある */
+  quotaExceeded: boolean
 }
 
 async function suggestForPrefecture(
@@ -46,20 +49,24 @@ async function suggestForPrefecture(
 ): Promise<SuggestResult> {
   const cached = await getCachedPlacesByPrefecture(prefecture, preferences)
   if (cached?.length) {
-    return { places: cached, usedFallback: false }
+    return { places: cached, usedFallback: false, quotaExceeded: false }
   }
 
   try {
     const places = await searchTouristSpots(prefecture, preferences)
     if (places.length > 0) {
       await setCachedPlacesByPrefecture(prefecture, preferences, places)
-      return { places, usedFallback: false }
+      return { places, usedFallback: false, quotaExceeded: false }
     }
-    return { places: [], usedFallback: false }
+    return { places: [], usedFallback: false, quotaExceeded: false }
   } catch (error) {
     // 架空の代替地点は行き先として選ばせられないため、候補なしとして返す
     console.warn('Places API failed while suggesting spots:', error)
-    return { places: [], usedFallback: true }
+    return {
+      places: [],
+      usedFallback: true,
+      quotaExceeded: error instanceof PlacesQuotaExceededError,
+    }
   }
 }
 
@@ -85,5 +92,6 @@ export async function suggestTouristSpots(
   return {
     places: thinNearbyPlaces(merged, MIN_POI_SPACING_KM),
     usedFallback: results.some((result) => result.usedFallback),
+    quotaExceeded: results.some((result) => result.quotaExceeded),
   }
 }

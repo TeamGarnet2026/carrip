@@ -23,8 +23,6 @@ export default async function PlanConfirmedPage({
     <AppShell
       email={user?.email}
       showLogout={!!user}
-      title="プラン確定"
-      subtitle="選択したルートを保存して、マイプランからいつでも確認できます"
     >
       <TripSavePanel planId={id} isLoggedIn={!!user} />
     </AppShell>

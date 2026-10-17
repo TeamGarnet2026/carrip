@@ -7,6 +7,7 @@ type PreferenceSelectorProps = {
   onChange: (value: string[]) => void
 }
 
+/** 重視したいこと（複数選択のチェックボックス） */
 export function PreferenceSelector({ value, onChange }: PreferenceSelectorProps) {
   function toggle(id: string) {
     if (value.includes(id)) {
@@ -17,27 +18,20 @@ export function PreferenceSelector({ value, onChange }: PreferenceSelectorProps)
   }
 
   return (
-    <div>
-      <p className="mb-2 text-[13px] font-bold text-ink">優先軸（複数選択可）</p>
-      <div className="flex flex-wrap gap-2">
-        {PREFERENCE_OPTIONS.map((option) => {
-          const selected = value.includes(option.id)
-          return (
-            <button
-              key={option.id}
-              type="button"
-              onClick={() => toggle(option.id)}
-              className={`rounded-full border px-4 py-2 text-sm font-bold transition ${
-                selected
-                  ? 'border-brand bg-brand text-white shadow-[0_4px_12px_rgba(15,138,126,0.25)]'
-                  : 'border-line bg-surface text-ink hover:border-teal-300'
-              }`}
-            >
-              {option.label}
-            </button>
-          )
-        })}
+    <fieldset className="m-0 border-0 p-0">
+      <legend className="mb-3 p-0 text-sm font-semibold">重視したいこと（複数選択可）</legend>
+      <div className="flex flex-wrap gap-3">
+        {PREFERENCE_OPTIONS.map((option) => (
+          <label key={option.id} className="carrip-option">
+            <input
+              type="checkbox"
+              checked={value.includes(option.id)}
+              onChange={() => toggle(option.id)}
+            />
+            {option.label}
+          </label>
+        ))}
       </div>
-    </div>
+    </fieldset>
   )
 }

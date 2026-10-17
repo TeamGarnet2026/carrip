@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { ZodError, z } from 'zod'
 import { enforceRateLimit } from '@/lib/api/rate-limit'
 import { isGoogleCloudConfigured } from '@/lib/google/config'
+import { FREE_PLAN_ENDED_MESSAGE } from '@/lib/google/quota'
 import { suggestTouristSpots, toSpotCandidate } from '@/lib/poi/suggest'
 
 const suggestQuerySchema = z.object({
@@ -35,6 +36,14 @@ export async function GET(request: Request) {
       query.prefecture,
       query.preferences
     )
+
+    // 利用上限で1件も出せないときは、その旨を画面に伝える
+    if (result.places.length === 0 && result.quotaExceeded) {
+      return NextResponse.json(
+        { error: FREE_PLAN_ENDED_MESSAGE, code: 'quota_exceeded' },
+        { status: 429 }
+      )
+    }
 
     return NextResponse.json({
       count: result.places.length,

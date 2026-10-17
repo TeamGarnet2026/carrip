@@ -1,13 +1,13 @@
 'use client'
 
-import { VEHICLE_PRESETS } from '@/lib/plan/constants'
-import { FUEL_TYPES, FUEL_TYPE_LABELS } from '@/lib/routes/fuel'
 import { Input } from '@/components/ui/input'
+import { VEHICLE_PRESETS } from '@/lib/plan/constants'
+import type { FuelType } from '@/lib/routes/fuel'
 
 type VehicleValue = {
   type: string
   fuel_km_l?: number
-  fuel_type?: 'diesel' | 'regular' | 'premium'
+  fuel_type?: FuelType
 }
 
 type VehicleSelectorProps = {
@@ -15,74 +15,97 @@ type VehicleSelectorProps = {
   onChange: (value: VehicleValue) => void
 }
 
+/** 画面での表示名（ガソリン → レギュラー） */
+const FUEL_CHOICES: Array<{ id: FuelType; label: string }> = [
+  { id: 'regular', label: 'レギュラー' },
+  { id: 'premium', label: 'ハイオク' },
+  { id: 'diesel', label: '軽油' },
+]
+
+function presetDescription(preset: (typeof VEHICLE_PRESETS)[number]): string {
+  if (preset.id === 'custom') return '燃費を直接入力'
+  const unit = preset.id === 'ev' ? 'km/kWh' : 'km/L'
+  return `${preset.fuelKmL} ${unit} · ${preset.example.split('・')[0]}など`
+}
+
+function presetLabel(label: string): string {
+  return label.replace('（電気自動車）', '').replace('カスタム入力', 'カスタム').replace('/', '・')
+}
+
+/** 車種（燃費つきのカード）と燃料の選択 */
 export function VehicleSelector({ value, onChange }: VehicleSelectorProps) {
   const isCustom = value.type === 'custom'
+  const isEv = value.type === 'ev'
+  const selectedFuel = value.fuel_type ?? 'regular'
 
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="mb-2 text-[13px] font-bold text-ink">車種</p>
-        <div className="grid gap-2 sm:grid-cols-2">
+    <div className="flex flex-col gap-7">
+      <fieldset className="m-0 border-0 p-0">
+        <legend className="mb-3 p-0 text-sm font-semibold">車種</legend>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3">
           {VEHICLE_PRESETS.map((preset) => (
-            <button
+            <label
               key={preset.id}
-              type="button"
-              onClick={() =>
-                onChange({
-                  type: preset.id,
-                  fuel_km_l:
-                    preset.id === 'custom' ? value.fuel_km_l : preset.fuelKmL,
-                })
-              }
-              className={`rounded-xl border p-4 text-left text-sm transition ${
-                value.type === preset.id
-                  ? 'border-brand bg-brand-soft ring-4 ring-brand/10'
-                  : 'border-line bg-surface hover:border-teal-300'
-              }`}
+              className="carrip-option flex-col items-start gap-1.5 py-4 whitespace-normal"
             >
-              <p className="font-bold">{preset.label}</p>
-              <p className="mt-1 text-xs text-muted">{preset.example}</p>
-            </button>
+              <span className="flex items-center gap-2.5 text-[15px] whitespace-nowrap">
+                <input
+                  type="radio"
+                  name="vehicle-type"
+                  checked={value.type === preset.id}
+                  onChange={() =>
+                    onChange({
+                      ...value,
+                      type: preset.id,
+                      fuel_km_l: preset.id === 'custom' ? value.fuel_km_l : preset.fuelKmL,
+                    })
+                  }
+                />
+                {presetLabel(preset.label)}
+              </span>
+              <span className="pl-7 text-[13px] font-normal text-muted">
+                {presetDescription(preset)}
+              </span>
+            </label>
           ))}
         </div>
-      </div>
+      </fieldset>
 
       {isCustom && (
-        <>
-          <Input
-            label="カスタム燃費（km/L または km/kWh）"
-            type="number"
-            min="1"
-            max="200"
-            value={value.fuel_km_l?.toString() ?? ''}
-            onChange={(next) =>
-              onChange({
-                ...value,
-                fuel_km_l: next ? Number(next) : undefined,
-              })
-            }
-            helperText="1〜200 の範囲で入力してください"
-          />
-          <div>
-            <p className="mb-2 text-[13px] font-bold text-ink">燃料種別</p>
-            <div className="grid grid-cols-3 gap-2">
-              {FUEL_TYPES.map((fuelType) => (
-                <button
-                  key={fuelType}
-                  type="button"
-                  onClick={() => onChange({ ...value, fuel_type: fuelType })}
-                  className={`rounded-xl border p-2.5 text-sm font-bold transition ${
-                    value.fuel_type === fuelType
-                      ? 'border-brand bg-brand-soft ring-4 ring-brand/10'
-                      : 'border-line bg-surface hover:border-teal-300'
-                  }`}
-                >
-                  {FUEL_TYPE_LABELS[fuelType]}
-                </button>
-              ))}
-            </div>
+        <Input
+          label="燃費（km/L または km/kWh）"
+          type="number"
+          min="1"
+          max="200"
+          suffix="km/L"
+          value={value.fuel_km_l?.toString() ?? ''}
+          onChange={(next) =>
+            onChange({
+              ...value,
+              fuel_km_l: next ? Number(next) : undefined,
+            })
+          }
+          helperText="1〜200 の範囲で入力してください"
+        />
+      )}
+
+      {!isEv && (
+        <fieldset className="m-0 border-0 p-0">
+          <legend className="mb-3 p-0 text-sm font-semibold">燃料</legend>
+          <div className="flex flex-wrap gap-3">
+            {FUEL_CHOICES.map((fuel) => (
+              <label key={fuel.id} className="carrip-option">
+                <input
+                  type="radio"
+                  name="fuel-type"
+                  checked={isCustom ? value.fuel_type === fuel.id : selectedFuel === fuel.id}
+                  onChange={() => onChange({ ...value, fuel_type: fuel.id })}
+                />
+                {fuel.label}
+              </label>
+            ))}
           </div>
-        </>
+        </fieldset>
       )}
     </div>
   )

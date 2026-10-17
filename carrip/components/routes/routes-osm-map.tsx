@@ -38,6 +38,7 @@ type RoutesOsmMapProps = {
   selectedRouteId: string
   onSelectRoute: (routeId: string) => void
   originLabel?: string
+  compact?: boolean
 }
 
 function FitBounds({ points }: { points: LatLng[] }) {
@@ -122,6 +123,7 @@ export function RoutesOsmMap({
   selectedRouteId,
   onSelectRoute,
   originLabel,
+  compact = false,
 }: RoutesOsmMapProps) {
   const center = useMemo(() => getDefaultMapCenter(routes), [routes])
   const fitPoints = useMemo(() => collectRoutePoints(routes), [routes])
@@ -140,7 +142,7 @@ export function RoutesOsmMap({
       <MapContainer
         center={[center.lat, center.lng]}
         zoom={8}
-        className="h-[380px] w-full"
+        className={compact ? 'h-[220px] w-full' : 'h-[380px] w-full'}
         scrollWheelZoom
       >
         <TileLayer
@@ -219,43 +221,47 @@ export function RoutesOsmMap({
         ))}
       </MapContainer>
 
-      <div className="flex flex-wrap gap-3 border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
-        {routes.map((route, index) => {
-          const color = getRouteColor(route.id, index)
-          const isSelected = route.id === selectedRouteId
+      {!compact && (
+        <>
+        <div className="flex flex-wrap gap-3 border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
+          {routes.map((route, index) => {
+            const color = getRouteColor(route.id, index)
+            const isSelected = route.id === selectedRouteId
 
-          return (
-            <button
-              key={route.id}
-              type="button"
-              onClick={() => onSelectRoute(route.id)}
-              className={`flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition ${
-                isSelected
-                  ? 'bg-neutral-100 font-medium dark:bg-neutral-800'
-                  : 'opacity-70 hover:opacity-100'
-              }`}
-            >
-              <span
-                className="inline-block h-2 w-6 rounded-full"
-                style={{ backgroundColor: color }}
-              />
-              案{index + 1}: {route.title}
-            </button>
-          )
-        })}
-      </div>
-
-      {selectedRoundTrip && (
-        <div className="border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
-          <RoundTripLegend />
+            return (
+              <button
+                key={route.id}
+                type="button"
+                onClick={() => onSelectRoute(route.id)}
+                className={`flex items-center gap-2 rounded-lg px-2 py-1 text-xs transition ${
+                  isSelected
+                    ? 'bg-neutral-100 font-medium dark:bg-neutral-800'
+                    : 'opacity-70 hover:opacity-100'
+                }`}
+              >
+                <span
+                  className="inline-block h-2 w-6 rounded-full"
+                  style={{ backgroundColor: color }}
+                />
+                案{index + 1}: {route.title}
+              </button>
+            )
+          })}
         </div>
-      )}
 
-      <p className="border-t border-neutral-200 px-3 py-2 text-xs text-neutral-500 dark:border-neutral-800">
-        OpenStreetMap · 自動車ルート（NAVITIME）
-        {originLabel ? ` · 出発: ${originLabel}` : ''}
-        {selectedRoundTrip ? ' · 往復' : ''}
-      </p>
+        {selectedRoundTrip && (
+          <div className="border-t border-neutral-200 px-3 py-2 dark:border-neutral-800">
+            <RoundTripLegend />
+          </div>
+        )}
+
+        <p className="border-t border-neutral-200 px-3 py-2 text-xs text-neutral-500 dark:border-neutral-800">
+          OpenStreetMap · 自動車ルート（NAVITIME）
+          {originLabel ? ` · 出発: ${originLabel}` : ''}
+          {selectedRoundTrip ? ' · 往復' : ''}
+        </p>
+        </>
+      )}
     </div>
   )
 }

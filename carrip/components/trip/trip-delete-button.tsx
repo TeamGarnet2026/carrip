@@ -7,9 +7,15 @@ import { Button } from '@/components/ui/button'
 type TripDeleteButtonProps = {
   tripId: string
   tripLabel: string
+  /** ボタンの文言 */
+  label?: string
 }
 
-export function TripDeleteButton({ tripId, tripLabel }: TripDeleteButtonProps) {
+export function TripDeleteButton({
+  tripId,
+  tripLabel,
+  label = 'プランを削除',
+}: TripDeleteButtonProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,12 +52,12 @@ export function TripDeleteButton({ tripId, tripLabel }: TripDeleteButtonProps) {
   return (
     <div>
       {error && (
-        <p className="mb-2 text-sm text-red-600 dark:text-red-400" role="alert">
+        <p className="mb-2 text-sm text-cost-admission" role="alert">
           {error}
         </p>
       )}
       <Button variant="danger" onClick={handleDelete} isLoading={loading}>
-        プランを削除
+        {label}
       </Button>
     </div>
   )

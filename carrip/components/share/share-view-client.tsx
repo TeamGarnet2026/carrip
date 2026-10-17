@@ -1,19 +1,29 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { AppShell } from '@/components/layout/app-shell'
-import { Badge } from '@/components/ui/badge'
+import { CostBar, COST_ITEMS } from '@/components/route/cost-bar'
+import { ItineraryList } from '@/components/route/itinerary-list'
+import { Button } from '@/components/ui/button'
+import { ExternalIcon } from '@/components/ui/icons'
 import { Spinner } from '@/components/ui/spinner'
-import { CostBreakdownPanel } from '@/components/route/cost-breakdown-panel'
-import { OpenInGoogleMapsLink } from '@/components/maps/open-in-google-maps-link'
-import type { CostBreakdown } from '@/lib/routes/types'
+import {
+  formatDuration,
+  formatJapaneseDate,
+  formatTripLength,
+  formatYen,
+} from '@/lib/format'
+import { buildGoogleMapsDirectionsUrl } from '@/lib/maps/google-maps-directions-url'
+import { planDisplayName } from '@/lib/plan/display-name'
+import type { CostBreakdown, RouteStop } from '@/lib/routes/types'
 
 type ShareViewPageProps = {
   shortCode: string
 }
 
 type SharePayload = {
+  share?: { expires_at?: string }
   trip: {
     origin: string
     prefecture: string[]
@@ -29,18 +39,34 @@ type SharePayload = {
   } | null
   stops: Array<{
     stop_order: number
+    stay_minutes?: number | null
+    parking_cost?: number | null
+    admission_fee?: number | null
     pois: {
+      google_place_id?: string
       name: string
       lat: number
       lng: number
+      category?: string | null
     } | null
   }>
 }
 
+function subscribeToNothing() {
+  return () => {}
+}
+
+/** 共有リンクから開く旅程（PC_04 / SP_09）。ログインなしで見られる */
 export function ShareViewClient({ shortCode }: ShareViewPageProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [data, setData] = useState<SharePayload | null>(null)
+  const [copied, setCopied] = useState(false)
+  const pageUrl = useSyncExternalStore(
+    subscribeToNothing,
+    () => window.location.href,
+    () => ''
+  )
 
   useEffect(() => {
     async function load() {
@@ -62,101 +88,214 @@ export function ShareViewClient({ shortCode }: ShareViewPageProps) {
     void load()
   }, [shortCode])
 
+  const stops = useMemo<RouteStop[]>(
+    () =>
+      (data?.stops ?? [])
+        .filter((stop) => stop.pois != null)
+        .map((stop) => ({
+          place_id: stop.pois!.google_place_id ?? `stop-${stop.stop_order}`,
+          name: stop.pois!.name,
+          address: '',
+          lat: stop.pois!.lat,
+          lng: stop.pois!.lng,
+          category: stop.pois!.category ?? undefined,
+          stay_minutes: stop.stay_minutes ?? undefined,
+          parking_yen: stop.parking_cost ?? undefined,
+          admission_yen_per_person: stop.admission_fee ?? undefined,
+        })),
+    [data]
+  )
+
+  async function handleCopy() {
+    if (!pageUrl) return
+    await navigator.clipboard.writeText(pageUrl)
+    setCopied(true)
+    window.setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleLineShare() {
+    if (!pageUrl) return
+    const text = encodeURIComponent(`Carripで旅行プランを共有します\n${pageUrl}`)
+    window.open(`https://line.me/R/msg/text/?${text}`, '_blank')
+  }
+
+  if (loading) {
+    return (
+      <AppShell>
+        <div className="flex justify-center py-24">
+          <Spinner size="lg" label="共有プランを読み込み中" />
+        </div>
+      </AppShell>
+    )
+  }
+
+  if (error || !data?.trip || !data.route) {
+    return (
+      <AppShell variant="center">
+        <div className="carrip-panel p-8 text-center">
+          <h1 className="m-0 text-2xl font-bold">旅程を表示できません</h1>
+          <p className="mt-3 mb-0 text-ink-soft">{error ?? '共有リンクが見つかりません。'}</p>
+          <Link href="/" className="mt-6 inline-block">
+            <Button variant="secondary">トップへ戻る</Button>
+          </Link>
+        </div>
+      </AppShell>
+    )
+  }
+
+  const { trip, route } = data
+  const totalCost = route.total_cost ?? 0
+  const perPerson = Math.round(totalCost / Math.max(1, trip.people))
+  const name = planDisplayName(trip.prefecture, trip.days)
+  const touristCount = stops.filter((stop) => !stop.category?.match(/area|convenience/)).length
+  const directions = buildGoogleMapsDirectionsUrl({
+    origin: trip.origin,
+    stops: stops.map((stop) => ({ lat: stop.lat, lng: stop.lng, name: stop.name })),
+  })
+  const qrUrl = pageUrl
+    ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(pageUrl)}`
+    : null
+  const expires = data.share?.expires_at
+    ? formatJapaneseDate(data.share.expires_at.slice(0, 10)).replace(/（.）$/, '')
+    : null
+
   return (
-    <AppShell title="共有プラン" subtitle="閲覧専用の旅程情報です">
-      <div className="max-w-3xl">
-        {loading && (
-          <div className="flex justify-center py-16">
-            <Spinner label="共有プランを読み込み中" />
-          </div>
-        )}
+    <AppShell>
+      <div className="flex flex-col gap-8">
+        <div className="hidden h-[360px] grid-cols-[2fr_1fr] gap-3 md:grid" aria-hidden>
+          <span className="carrip-photo h-full" />
+          <span className="grid grid-rows-2 gap-3">
+            <span className="carrip-photo bg-photo-2" />
+            <span className="carrip-photo bg-photo-4" />
+          </span>
+        </div>
 
-        {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6 dark:border-red-900 dark:bg-red-950/40">
-            <p className="text-red-800 dark:text-red-200">{error}</p>
-            <Link href="/" className="mt-4 inline-block text-sm underline">
-              トップへ戻る
-            </Link>
-          </div>
-        )}
-
-        {data?.trip && data.route && (
-          <div className="space-y-6">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:items-start">
+          <div className="flex flex-col gap-6">
             <div>
-              <Badge variant="info" label="共有プラン（閲覧のみ）" />
-              <h1 className="mt-3 text-2xl font-bold">
-                {data.trip.origin} → {data.trip.prefecture.join('、')}
+              <p className="m-0 text-[13px] text-muted">
+                {formatJapaneseDate(trip.departure_date)} · {formatTripLength(trip.days)} ·{' '}
+                {trip.people}人
+              </p>
+              <h1 className="mt-2 mb-0 text-[28px] leading-tight font-bold md:text-[36px]">
+                {name}
               </h1>
-              <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-                {data.trip.departure_date} 出発 · {data.trip.days}日間 ·{' '}
-                {data.trip.people}人
+              <p className="mt-3 mb-0 text-[15px] text-ink-soft">
+                {trip.origin}を出発し、{touristCount}か所に立ち寄ります。
               </p>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Stat label="総距離" value={`${data.route.total_distance_km ?? 0} km`} />
-              <Stat
-                label="所要時間"
-                value={`${data.route.total_duration_min ?? 0} 分`}
-              />
-              <Stat
-                label="総費用"
-                value={`${(data.route.total_cost ?? 0).toLocaleString('ja-JP')}円`}
-              />
-            </div>
+            <dl className="m-0 grid grid-cols-2 border-y border-ink md:grid-cols-4">
+              {[
+                ['1人あたり', formatYen(perPerson), true],
+                ['総費用', formatYen(totalCost), false],
+                ['走行', `${route.total_distance_km ?? 0} km`, false],
+                ['運転時間', formatDuration(route.total_duration_min ?? 0), false],
+              ].map(([label, value, strong], index) => (
+                <div
+                  key={label as string}
+                  className={`py-5 ${index % 2 === 1 ? 'pl-5' : ''} md:pl-5 ${
+                    index > 0 ? 'md:border-l md:border-line' : 'md:pl-0'
+                  } ${index >= 2 ? 'border-t border-line md:border-t-0' : ''}`}
+                >
+                  <dt className="text-[13px] text-muted">{label}</dt>
+                  <dd
+                    className={`m-0 mt-2 font-semibold tabular-nums ${strong ? 'text-[32px] leading-none' : 'text-2xl'}`}
+                  >
+                    {value}
+                  </dd>
+                </div>
+              ))}
+            </dl>
 
-            {data.route.cost_breakdown_json && (
-              <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
-                <h2 className="mb-3 font-semibold">費用内訳</h2>
-                <CostBreakdownPanel
-                  breakdown={data.route.cost_breakdown_json}
-                  people={data.trip.people}
-                />
+            {route.cost_breakdown_json && (
+              <div className="flex flex-col gap-3">
+                <CostBar breakdown={route.cost_breakdown_json} className="h-1.5" />
+                <ul className="m-0 flex list-none flex-wrap gap-x-5 gap-y-1 p-0 text-[13px] text-ink-soft">
+                  {COST_ITEMS.map((item) => (
+                    <li key={item.key} className="flex items-center gap-1.5">
+                      <span className={`h-2 w-2 rounded-full ${item.bar}`} aria-hidden />
+                      {item.label} {formatYen(route.cost_breakdown_json![item.key])}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            <div className="rounded-xl border border-neutral-200 p-4 dark:border-neutral-800">
-              <h2 className="mb-3 font-semibold">立ち寄り地点</h2>
-              <ol className="space-y-1 text-sm">
-                {data.stops.map((stop) => (
-                  <li key={stop.stop_order}>
-                    {stop.stop_order}. {stop.pois?.name ?? '地点'}
-                  </li>
-                ))}
-              </ol>
-              {data.trip && (
-                <div className="mt-4">
-                  <OpenInGoogleMapsLink
-                    origin={data.trip.origin}
-                    stops={data.stops
-                      .map((stop) => stop.pois)
-                      .filter(
-                        (poi): poi is NonNullable<typeof poi> =>
-                          poi != null &&
-                          Number.isFinite(poi.lat) &&
-                          Number.isFinite(poi.lng)
-                      )
-                      .map((poi) => ({
-                        lat: poi.lat,
-                        lng: poi.lng,
-                        name: poi.name,
-                      }))}
-                  />
-                </div>
+            <section>
+              <h2 className="mt-2 mb-4 text-xl font-bold">旅程</h2>
+              <ItineraryList
+                route={{
+                  stops,
+                  polyline: [],
+                  sections: [],
+                  total_duration_min: route.total_duration_min ?? 0,
+                }}
+                origin={trip.origin}
+                people={trip.people}
+                showTimes={false}
+              />
+              {directions && (
+                <a
+                  href={directions.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 inline-block"
+                >
+                  <Button variant="secondary">
+                    Googleマップで開く
+                    <ExternalIcon className="h-4 w-4" />
+                  </Button>
+                </a>
               )}
-            </div>
+            </section>
           </div>
-        )}
+
+          <aside className="flex flex-col gap-5 rounded-2xl border border-line bg-surface p-6 md:p-8">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className="m-0 text-xl font-bold">メンバーに共有</h2>
+              {expires && <span className="text-[13px] text-muted">{expires}まで有効</span>}
+            </div>
+            <p className="m-0 text-sm text-ink-soft">
+              リンクを受け取った人は、ログインなしで旅程と費用を見られます。
+            </p>
+            <div>
+              <label htmlFor="shared-url" className="mb-2 block text-[13px] text-muted">
+                共有URL
+              </label>
+              <div className="flex gap-3">
+                <input
+                  id="shared-url"
+                  readOnly
+                  value={pageUrl}
+                  onFocus={(event) => event.currentTarget.select()}
+                  className="carrip-field min-h-12 min-w-0 flex-1 rounded-[10px] border border-line-strong px-4 text-sm"
+                  style={{ backgroundColor: '#f6f6f3' }}
+                />
+                <Button variant="secondary" onClick={handleCopy} className="shrink-0">
+                  {copied ? 'コピーしました' : 'コピー'}
+                </Button>
+              </div>
+            </div>
+            {qrUrl && (
+              <div className="hidden items-center gap-5 rounded-xl bg-soft p-5 md:flex">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={qrUrl}
+                  alt="この旅程のQRコード"
+                  width={104}
+                  height={104}
+                  className="rounded-lg bg-surface p-2"
+                />
+                <p className="m-0 text-sm text-ink-soft">スマホのカメラで読み取って開けます。</p>
+              </div>
+            )}
+            <Button size="lg" className="w-full" onClick={handleLineShare}>
+              LINEで送る
+            </Button>
+          </aside>
+        </div>
       </div>
     </AppShell>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg bg-soft p-3">
-      <p className="text-xs text-muted">{label}</p>
-      <p className="font-extrabold text-ink">{value}</p>
-    </div>
   )
 }

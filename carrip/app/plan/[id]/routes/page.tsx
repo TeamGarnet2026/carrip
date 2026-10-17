@@ -13,10 +13,7 @@ export default async function RouteCandidatesPage({
   const { id } = await params
 
   return (
-    <AppShell
-      title="ルートと料金"
-      subtitle="選んだ行き先を回るルートと、比較用の直行ルートの費用です"
-    >
+    <AppShell>
       <RoutesListPanel planId={id} />
     </AppShell>
   )

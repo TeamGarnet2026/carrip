@@ -4,6 +4,7 @@ import {
   parseAdmissionFeeFromPlace,
 } from '@/lib/google/admission-fee'
 import { lookupLocalGeocode } from '@/lib/google/geocode-fallback'
+import { placesApiError } from '@/lib/google/quota'
 import type { PoiPlace } from '@/lib/google/types'
 
 const PREFERENCE_KEYWORDS: Record<string, string> = {
@@ -92,7 +93,7 @@ export async function searchTouristSpots(
 
   if (!response.ok) {
     const detail = await response.text()
-    throw new Error(`Places API エラー (${response.status}): ${detail}`)
+    throw placesApiError(response.status, detail)
   }
 
   const data = (await response.json()) as PlacesSearchResponse
