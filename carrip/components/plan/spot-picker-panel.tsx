@@ -42,6 +42,10 @@ function toRouteStop(spot: SpotCandidate): RouteStop {
     lng: spot.lng,
     category: spot.category ?? 'tourist',
     is_rest_stop: false,
+    ...(spot.rating != null ? { rating: spot.rating } : {}),
+    ...(spot.user_rating_count != null
+      ? { user_rating_count: spot.user_rating_count }
+      : {}),
   }
 }
 

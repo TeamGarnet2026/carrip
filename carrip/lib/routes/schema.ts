@@ -59,6 +59,8 @@ export const routeStopEditSchema = z.object({
     .enum(['places', 'category_default', 'free', 'manual', 'estimate'])
     .optional(),
   admission_yen_per_person: z.number().int().min(0).max(100000).optional(),
+  rating: z.number().min(0).max(5).optional(),
+  user_rating_count: z.number().int().min(0).optional(),
 })
 
 /** 行き先として選べる上限（運転交代地点は別枠で自動挿入される） */
