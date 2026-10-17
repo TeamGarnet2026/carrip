@@ -20,6 +20,25 @@ const LANDMARK_COORDS: Record<string, LatLng> = {
   成田空港: { lat: 35.7719, lng: 140.3929 },
 }
 
+// 「現在地（35.01234, 135.76543）」のように座標を含む出発地（GPS 取得時）
+const COORDINATE_PATTERN = /(-?\d{1,2}(?:\.\d+)?)\s*[,、，]\s*(-?\d{1,3}(?:\.\d+)?)/
+
+/** GPS で取得した座標を、出発地欄に表示・保存する文字列にする */
+export function formatGpsOrigin(lat: number, lng: number): string {
+  return `現在地（${lat.toFixed(5)}, ${lng.toFixed(5)}）`
+}
+
+/** 文字列に含まれる「緯度, 経度」を取り出す。範囲外の値は無視する */
+export function parseCoordinates(query: string): LatLng | null {
+  const match = query.match(COORDINATE_PATTERN)
+  if (!match) return null
+  const lat = Number(match[1])
+  const lng = Number(match[2])
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null
+  return { lat, lng }
+}
+
 function normalizeGeocodeQuery(query: string): string {
   return query
     .trim()
@@ -29,9 +48,13 @@ function normalizeGeocodeQuery(query: string): string {
 
 /**
  * Places API 枠を消費しないローカル座標解決。
- * 都道府県名・主要ランドマークにヒットすれば返す。
+ * 座標・都道府県名・主要ランドマークにヒットすれば返す。
  */
 export function lookupLocalGeocode(query: string): LatLng | null {
+  // GPS で取得した座標はそのまま使う（Places API で文字列検索すると失敗するため）
+  const coordinates = parseCoordinates(query)
+  if (coordinates) return coordinates
+
   const normalized = normalizeGeocodeQuery(query)
   if (!normalized) return null
 

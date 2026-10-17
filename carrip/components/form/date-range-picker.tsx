@@ -1,5 +1,7 @@
 'use client'
 
+import { useId } from 'react'
+
 type DateRangePickerProps = {
   departureDate: string
   days: number
@@ -24,11 +26,15 @@ export function DateRangePicker({
   onChangeDate,
   onChangeDays,
 }: DateRangePickerProps) {
+  const dateId = useId()
+  const daysId = useId()
+
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div>
-        <label className="mb-2 block text-[13px] font-bold text-ink">出発日</label>
+        <label htmlFor={dateId} className="mb-2 block text-[13px] font-bold text-ink">出発日</label>
         <input
+          id={dateId}
           type="date"
           min={minDateIso()}
           max={maxDateIso()}
@@ -45,8 +51,8 @@ export function DateRangePicker({
         <p className="mt-1.5 text-xs text-muted">今日から180日以内</p>
       </div>
       <div>
-        <label className="mb-2 block text-[13px] font-bold text-ink">旅行日数</label>
-        <div className="inline-flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
+        <p id={daysId} className="mt-0 mb-2 block text-[13px] font-bold text-ink">旅行日数</p>
+        <div role="group" aria-labelledby={daysId} className="inline-flex items-center gap-1 rounded-xl border border-line bg-surface p-1 shadow-[0_1px_2px_rgba(15,23,42,0.04)]">
           <button
             type="button"
             disabled={days <= 1}
