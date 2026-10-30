@@ -59,7 +59,10 @@ export async function enforceRateLimit(
   }
 
   return NextResponse.json(
-    { error: 'リクエストが多すぎます。少し時間をおいてから再度お試しください' },
+    {
+      error:
+        '短時間にリクエストが集中したため、一時的に制限しています。少し待ってからお試しください',
+    },
     {
       status: 429,
       headers: { 'Retry-After': String(options.windowSeconds) },
