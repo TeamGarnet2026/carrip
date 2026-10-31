@@ -39,10 +39,7 @@ test.describe('位置情報を許可したとき', () => {
 test.describe('位置情報を拒否したとき', () => {
   test.use({ permissions: [] })
 
-  test('手入力に戻れるようメッセージを出し、出発地は空のまま入力できる', async ({ page, browserName }) => {
-    // Firefox は許可しないと確認の表示が出たまま応答しないため、拒否の動作は Chromium / WebKit で確認する
-    test.skip(browserName === 'firefox', 'Firefox は自動テストで拒否を再現できない')
-
+  test('手入力に戻れるようメッセージを出し、出発地は空のまま入力できる', async ({ page }) => {
     await page.goto('/plan/new?step=1')
     await page.waitForLoadState('networkidle')
     await page.getByRole('button', { name: '現在地を使う' }).click()
