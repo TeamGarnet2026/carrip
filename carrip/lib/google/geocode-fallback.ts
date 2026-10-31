@@ -20,15 +20,17 @@ const LANDMARK_COORDS: Record<string, LatLng> = {
   成田空港: { lat: 35.7719, lng: 140.3929 },
 }
 
-// 「現在地（35.01234, 135.76543）」のように座標を含む出発地（GPS 取得時）
-const COORDINATE_PATTERN = /(-?\d{1,2}(?:\.\d+)?)\s*[,、，]\s*(-?\d{1,3}(?:\.\d+)?)/
+// 「現在地（35.01234, 135.76543）」（GPS 取得時）または「35.01234, 135.76543」だけの出発地。
+// 住所の中の「30、1」などを座標と誤解しないよう、文字列全体が座標の形のときだけ一致させる
+const COORDINATE_PATTERN =
+  /^\s*(?:現在地\s*[（(]\s*)?(-?\d{1,2}(?:\.\d+)?)\s*[,、，]\s*(-?\d{1,3}(?:\.\d+)?)\s*[）)]?\s*$/
 
 /** GPS で取得した座標を、出発地欄に表示・保存する文字列にする */
 export function formatGpsOrigin(lat: number, lng: number): string {
   return `現在地（${lat.toFixed(5)}, ${lng.toFixed(5)}）`
 }
 
-/** 文字列に含まれる「緯度, 経度」を取り出す。範囲外の値は無視する */
+/** 「緯度, 経度」だけの文字列（GPS の出発地を含む）から座標を取り出す。範囲外の値は無視する */
 export function parseCoordinates(query: string): LatLng | null {
   const match = query.match(COORDINATE_PATTERN)
   if (!match) return null

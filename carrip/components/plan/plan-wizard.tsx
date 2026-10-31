@@ -163,6 +163,13 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
       })
       return
     }
+    // http の画面ではブラウザが位置情報を拒否するため、許可の問題と区別して伝える
+    if (!window.isSecureContext) {
+      setErrors({
+        origin: '位置情報は https の画面でのみ使えます。出発地を入力してください',
+      })
+      return
+    }
 
     setLocating(true)
     navigator.geolocation.getCurrentPosition(
