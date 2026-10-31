@@ -25,6 +25,7 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
   const [share, setShare] = useState<ShareResponse | null>(null)
   const [copied, setCopied] = useState(false)
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
+  const [qrFailed, setQrFailed] = useState(false)
 
   useEffect(() => {
     async function createShare() {
@@ -66,7 +67,8 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
         if (!cancelled) setQrDataUrl(dataUrl)
       })
       .catch(() => {
-        if (!cancelled) setQrDataUrl(null)
+        // 失敗したまま「生成中」と出し続けないよう、URL で送る案内に切り替える
+        if (!cancelled) setQrFailed(true)
       })
     return () => {
       cancelled = true
@@ -153,7 +155,8 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
         </div>
       </section>
 
-      <aside className="hidden flex-col items-center gap-5 rounded-2xl border border-line bg-surface p-10 text-center lg:flex">
+      {/* その場のメンバーにスマホの画面を見せて読み取ってもらえるよう、スマホでも表示する */}
+      <aside className="flex flex-col items-center gap-5 rounded-2xl border border-line bg-surface p-6 text-center md:p-10">
         {qrDataUrl ? (
           // data URL のため next/image の最適化対象外
           // eslint-disable-next-line @next/next/no-img-element
@@ -165,8 +168,13 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
             className="rounded-xl border border-dashed border-line-strong p-3"
           />
         ) : (
-          <div className="grid h-[200px] w-[200px] place-items-center rounded-xl border border-dashed border-line-strong text-[13px] text-muted">
-            QRコードを生成中…
+          <div
+            role={qrFailed ? 'alert' : 'status'}
+            className="grid h-[200px] w-[200px] place-items-center rounded-xl border border-dashed border-line-strong p-4 text-[13px] text-muted"
+          >
+            {qrFailed
+              ? 'QRコードを作成できませんでした。共有URLをコピーして送ってください'
+              : 'QRコードを生成中…'}
           </div>
         )}
         <p className="m-0 text-sm leading-[1.8] text-ink-soft">
