@@ -294,6 +294,13 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
       applyRecommendations(suggestions.places)
       return
     }
+    // 自分で選ぶに切り替えたら、自動選択分をいったん空にする
+    if (next === 'manual') {
+      setSelected([])
+      setAutoPicked(false)
+      persist([], orderMode, { spotSelectMode: 'manual', spotsAutoPicked: false })
+      return
+    }
     persist(selected, orderMode, { spotSelectMode: next })
   }
 

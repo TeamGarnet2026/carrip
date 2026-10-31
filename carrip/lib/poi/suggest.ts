@@ -7,6 +7,9 @@ import { PlacesQuotaExceededError } from '@/lib/google/quota'
 import type { PoiPlace } from '@/lib/google/types'
 import { MIN_POI_SPACING_KM, thinNearbyPlaces } from '@/lib/maps/route-corridor'
 
+/** 行き先候補一覧に出す上限 */
+export const MAX_SUGGESTED_SPOTS = 10
+
 /** 行き先候補として画面に返す形 */
 export type SpotCandidate = {
   place_id: string
@@ -90,7 +93,10 @@ export async function suggestTouristSpots(
   }
 
   return {
-    places: thinNearbyPlaces(merged, MIN_POI_SPACING_KM),
+    places: thinNearbyPlaces(merged, MIN_POI_SPACING_KM).slice(
+      0,
+      MAX_SUGGESTED_SPOTS
+    ),
     usedFallback: results.some((result) => result.usedFallback),
     quotaExceeded: results.some((result) => result.quotaExceeded),
   }
