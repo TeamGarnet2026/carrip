@@ -1,0 +1,63 @@
+name: E2E
+
+# ブラウザ互換（#699）の E2E テスト。
+# Chrome / Edge / Firefox / WebKit（Safari のエンジン）と、スマホ幅（Pixel 7 / iPhone 14）で実行する。
+# 外部 API はテスト内で固定の応答に差し替えるため、API キーは使わない。
+
+on:
+  pull_request:
+    paths:
+      - 'carrip/**'
+      - '.github/workflows/e2e.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'carrip/**'
+      - '.github/workflows/e2e.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: carrip
+    env:
+      # 認証は使わない画面だけを確認するため、接続できないダミーの Supabase を渡す（未ログイン扱いになる）
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: e2e-dummy-anon-key
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: carrip/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium firefox webkit chrome msedge
+
+      - name: Run E2E tests
+        run: npm run test:e2e
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            carrip/playwright-report/
+            carrip/test-results/
+          retention-days: 14
