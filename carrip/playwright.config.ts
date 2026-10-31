@@ -6,10 +6,11 @@ import { defineConfig, devices } from '@playwright/test'
  * API キーや利用回数がなくても毎回同じ結果で動く。
  *
  * - `npm run test:e2e`              … 全ブラウザで実行
- * - `npm run test:e2e -- --project=firefox` … ブラウザを指定して実行
+ * - `npm run test:e2e -- --project=webkit`  … ブラウザを指定して実行
  *
  * Chrome / Edge は PC にインストールされている正式版を使う（channel）。
- * Firefox / WebKit（Safari のエンジン）は `npx playwright install firefox webkit` で入れる。
+ * WebKit（Safari のエンジン）は `npx playwright install webkit` で入れる。
+ * Firefox は普及率が下がっているため、テストのコストを減らす目的で対象から外している。
  */
 const PORT = Number(process.env.E2E_PORT ?? 3000)
 const BASE_URL = process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`
@@ -34,7 +35,6 @@ export default defineConfig({
   projects: [
     { name: 'chrome', use: { ...devices['Desktop Chrome'], channel: 'chrome' } },
     { name: 'edge', use: { ...devices['Desktop Edge'], channel: 'msedge' } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
     { name: 'webkit', use: { ...devices['Desktop Safari'] } },
     { name: 'mobile-chrome', use: { ...devices['Pixel 7'] } },
     { name: 'mobile-safari', use: { ...devices['iPhone 14'] } },

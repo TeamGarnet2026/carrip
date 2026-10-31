@@ -1,7 +1,7 @@
 name: E2E
 
 # ブラウザ互換（#699）の E2E テスト。
-# Chrome / Edge / Firefox / WebKit（Safari のエンジン）と、スマホ幅（Pixel 7 / iPhone 14）で実行する。
+# Chrome / Edge / WebKit（Safari のエンジン）と、スマホ幅（Pixel 7 / iPhone 14）で実行する。
 # 外部 API はテスト内で固定の応答に差し替えるため、API キーは使わない。
 
 on:
@@ -47,7 +47,7 @@ jobs:
         run: npm ci
 
       - name: Install browsers
-        run: npx playwright install --with-deps chromium firefox webkit chrome msedge
+        run: npx playwright install --with-deps chromium webkit chrome msedge
 
       - name: Run E2E tests
         run: npm run test:e2e

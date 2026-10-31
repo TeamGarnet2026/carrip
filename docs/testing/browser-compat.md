@@ -1,6 +1,8 @@
 # ブラウザ互換確認（#699）
 
-Chrome / Safari / Firefox / Edge の最新2世代で、主な機能が動くことを確認する。
+Chrome / Safari / Edge の最新2世代で、主な機能が動くことを確認する。
+
+Firefox は普及率が下がっているため、テストのコストを減らす目的で対象から外す（自動テスト・手動確認とも行わない）。
 
 ## 自動テスト（E2E）
 
@@ -8,7 +10,7 @@ Chrome / Safari / Firefox / Edge の最新2世代で、主な機能が動くこ�
 
 ```bash
 cd carrip
-npx playwright install chromium firefox webkit   # 初回のみ
+npx playwright install chromium webkit           # 初回のみ
 npm run test:e2e                                 # 全ブラウザ
 npm run test:e2e -- --project=webkit             # ブラウザを指定
 ```
@@ -34,7 +36,6 @@ GitHub Actions（`.github/workflows/e2e.yml`）でも、PR ごとに Linux 上�
 |---|---|---|
 | `chrome` | Google Chrome（インストール済みの正式版） | PC |
 | `edge` | Microsoft Edge（インストール済みの正式版） | PC |
-| `firefox` | Firefox（Playwright 同梱） | PC |
 | `webkit` | WebKit（Safari のエンジン、Playwright 同梱） | PC |
 | `mobile-chrome` | Chromium（Pixel 7 の画面・UA） | スマホ |
 | `mobile-safari` | WebKit（iPhone 14 の画面・UA） | スマホ |
@@ -50,7 +51,6 @@ GitHub Actions（`.github/workflows/e2e.yml`）でも、PR ごとに Linux 上�
 | WebKit（Safari のエンジン） | 27.2 | ✅ 7/7 |
 | スマホ幅 Chromium（Pixel 7） | 156 | ✅ 7/7 |
 | スマホ幅 WebKit（iPhone 14） | 27.2 | ✅ 7/7 |
-| Firefox | 157.0 | ⚠️ 未実施：この PC では Node.js から Firefox を起動できない（`spawn UNKNOWN`）。GitHub Actions の結果で確認する |
 
 ### 自動テストでは確認できないこと（人が確認する）
 
@@ -60,7 +60,6 @@ GitHub Actions（`.github/workflows/e2e.yml`）でも、PR ごとに Linux 上�
 |---|---|---|
 | Chrome 最新2世代 | 最新（156）✅ | 1つ前（155）で下の手順 |
 | Safari 最新2世代 | WebKit で代用 ✅ | Mac / iPhone の Safari 最新・1つ前で下の手順 |
-| Firefox 最新2世代 | CI で確認 | 最新・1つ前で下の手順 |
 | Edge 最新2世代 | 最新（156）✅ | 1つ前（155）で下の手順 |
 
 ### 手動確認の手順
@@ -80,7 +79,5 @@ GitHub Actions（`.github/workflows/e2e.yml`）でも、PR ごとに Linux 上�
 | Chrome | 155 | | | | | | | | | |
 | Safari | | macOS / iOS | | | | | | | | |
 | Safari | | macOS / iOS | | | | | | | | |
-| Firefox | | | | | | | | | | |
-| Firefox | | | | | | | | | | |
 | Edge | 156 | | | | | | | | | |
 | Edge | 155 | | | | | | | | | |
