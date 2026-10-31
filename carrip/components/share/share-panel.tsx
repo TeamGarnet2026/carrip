@@ -1,12 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import QRCode from 'qrcode'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { formatJapaneseDate } from '@/lib/format'
 import { loadPlanSession } from '@/lib/plan/storage'
+import { createShareQrDataUrl } from '@/lib/share/qr'
 
 type SharePanelProps = {
   planId: string
@@ -62,7 +62,7 @@ export function SharePanel({ planId, routeId }: SharePanelProps) {
   useEffect(() => {
     if (!share) return
     let cancelled = false
-    QRCode.toDataURL(share.share_url, { width: 360, margin: 1 })
+    createShareQrDataUrl(share.share_url)
       .then((dataUrl) => {
         if (!cancelled) setQrDataUrl(dataUrl)
       })
