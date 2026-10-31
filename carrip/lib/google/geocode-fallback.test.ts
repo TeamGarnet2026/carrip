@@ -25,6 +25,11 @@ describe('lookupLocalGeocode', () => {
     expect(lookupLocalGeocode('どこでもない場所xyz')).toBeNull()
   })
 
+  it('does not resolve an address to the numbers inside it', () => {
+    // 都道府県名で解決され、「30、1」を座標として扱わない
+    expect(lookupLocalGeocode('奈良県奈良市登大路町30、1')).not.toEqual({ lat: 30, lng: 1 })
+  })
+
   it('uses coordinates from a GPS origin as-is', () => {
     expect(lookupLocalGeocode(formatGpsOrigin(35.0116, 135.7681))).toEqual({
       lat: 35.0116,
@@ -45,6 +50,12 @@ describe('parseCoordinates', () => {
   it('ignores out-of-range values and plain text', () => {
     expect(parseCoordinates('95.0, 135.0')).toBeNull()
     expect(parseCoordinates('京都駅')).toBeNull()
+  })
+
+  it('does not treat numbers inside an address as coordinates', () => {
+    expect(parseCoordinates('奈良市登大路町30、1')).toBeNull()
+    expect(parseCoordinates('京都市中京区三条通 1, 2')).toBeNull()
+    expect(parseCoordinates('現在地（34.98585, 135.75877）付近の駐車場')).toBeNull()
   })
 })
 
