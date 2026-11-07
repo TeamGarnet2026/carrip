@@ -52,6 +52,8 @@ export type PoiSearchOptions = {
   maxResultCount?: number
   skipQualityFilter?: boolean
   locationBias?: { lat: number; lng: number; radiusMeters?: number }
+  /** 例: JP。指定すると、その国の結果を優先する */
+  regionCode?: string
 }
 
 export async function searchPlacesByText(
@@ -64,6 +66,7 @@ export async function searchPlacesByText(
     languageCode: 'ja',
     maxResultCount: options.maxResultCount ?? 10,
   }
+  if (options.regionCode) body.regionCode = options.regionCode
 
   if (options.locationBias) {
     body.locationBias = {

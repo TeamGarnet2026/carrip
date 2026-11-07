@@ -21,6 +21,9 @@ export const vehicleSchema = z
 
 export const routeGenerateSchema = z.object({
   origin: z.string().min(1),
+  origin_location: z
+    .object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180) })
+    .optional(),
   prefecture: z.array(z.string()).min(1).max(5),
   departure_date: z.string().min(1),
   days: z.number().int().min(1).max(7),

@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   GoogleMap,
-  MarkerF,
   PolylineF,
   useJsApiLoader,
+  type Libraries,
 } from '@react-google-maps/api'
+import { GoogleAdvancedMarker } from '@/components/maps/google-advanced-marker'
 import { RoundTripLegend } from '@/components/maps/round-trip-legend'
 import { getRouteColor } from '@/lib/maps/route-colors'
 import { getGoogleMapsApiKey } from '@/lib/google/maps-key'
@@ -41,6 +42,15 @@ type RoutesGoogleMapProps = {
 const MAP_CONTAINER_STYLE = { width: '100%', height: '380px' }
 const COMPACT_MAP_CONTAINER_STYLE = { width: '100%', height: '220px' }
 
+// 毎回新しい配列を渡すとローダーが再読み込みの警告を出すため、定数にしておく
+const MAPS_LIBRARIES: Libraries = ['marker']
+
+/**
+ * AdvancedMarkerElement には Map ID が必要。
+ * 未設定なら Google が用意している試用の DEMO_MAP_ID を使う（本番では専用の ID を設定する）
+ */
+const MAP_ID = process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID'
+
 function buildBounds(routes: RouteCandidate[]): google.maps.LatLngBounds | undefined {
   if (typeof google === 'undefined') return undefined
 
@@ -59,15 +69,6 @@ function buildBounds(routes: RouteCandidate[]): google.maps.LatLngBounds | undef
   }
 
   return hasPoint ? bounds : undefined
-}
-
-function markerPinColor(hex: string): string {
-  const map: Record<string, string> = {
-    '#0d9488': 'http://maps.google.com/mapfiles/ms/icons/green-dot.png',
-    '#f59e0b': 'http://maps.google.com/mapfiles/ms/icons/orange-dot.png',
-    '#2563eb': 'http://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-  }
-  return map[hex] ?? map['#2563eb']
 }
 
 function RoutePolylines({
@@ -158,6 +159,7 @@ export function RoutesGoogleMap({
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
+    libraries: MAPS_LIBRARIES,
   })
 
   useEffect(() => {
@@ -283,6 +285,7 @@ export function RoutesGoogleMap({
         zoom={8}
         onLoad={onMapLoad}
         options={{
+          mapId: MAP_ID,
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: true,
@@ -300,18 +303,10 @@ export function RoutesGoogleMap({
 
         {selectedRoute && selectedRoundTrip && selectedRoute.polyline.length > 0 && (
           <>
-            <MarkerF
+            <GoogleAdvancedMarker
               position={selectedRoute.polyline[0]}
-              icon={{
-                url: markerPinColor(mapMarkerColor('departure', true)),
-                labelOrigin: new google.maps.Point(15, 14),
-              }}
-              label={{
-                text: sameDepartureArrival ? '発' : mapMarkerLabel('departure'),
-                color: '#ffffff',
-                fontSize: '11px',
-                fontWeight: '700',
-              }}
+              color={mapMarkerColor('departure', true)}
+              label={sameDepartureArrival ? '発' : mapMarkerLabel('departure')}
               title={
                 sameDepartureArrival
                   ? `${originLabel ?? '出発地'}（出発・帰着）`
@@ -319,18 +314,10 @@ export function RoutesGoogleMap({
               }
             />
             {!sameDepartureArrival && (
-              <MarkerF
+              <GoogleAdvancedMarker
                 position={selectedRoute.polyline.at(-1)!}
-                icon={{
-                  url: markerPinColor(mapMarkerColor('arrival', true)),
-                  labelOrigin: new google.maps.Point(15, 14),
-                }}
-                label={{
-                  text: mapMarkerLabel('arrival'),
-                  color: '#ffffff',
-                  fontSize: '11px',
-                  fontWeight: '700',
-                }}
+                color={mapMarkerColor('arrival', true)}
+                label={mapMarkerLabel('arrival')}
                 title={`${originLabel ?? '出発地'}（帰着）`}
               />
             )}
@@ -338,27 +325,15 @@ export function RoutesGoogleMap({
         )}
 
         {selectedRoute?.stops.map((stop, index) => (
-          <MarkerF
+          <GoogleAdvancedMarker
             key={stop.place_id}
             position={{ lat: stop.lat, lng: stop.lng }}
-            icon={{
-              url: markerPinColor(
-                mapMarkerColor(
-                  'stop',
-                  selectedRoundTrip,
-                  stopLegs[index]
-                )
-              ),
-              labelOrigin: new google.maps.Point(15, 14),
-            }}
-            label={{
-              text: selectedRoundTrip
+            color={mapMarkerColor('stop', selectedRoundTrip, stopLegs[index])}
+            label={
+              selectedRoundTrip
                 ? String(roundTripStopNumber(stopLegs, index))
-                : mapMarkerLabel('stop', index),
-              color: '#ffffff',
-              fontSize: '11px',
-              fontWeight: '700',
-            }}
+                : mapMarkerLabel('stop', index)
+            }
             title={
               selectedRoundTrip
                 ? `${roundTripStopTitlePrefix(stopLegs, index)}${stop.name}`

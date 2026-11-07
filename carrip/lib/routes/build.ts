@@ -87,7 +87,7 @@ export async function buildRoutes(
   const { request } = input
   const roundTrip = request.options?.round_trip === true
 
-  const originLatLng = await geocodeAddress(request.origin)
+  const originLatLng = request.origin_location ?? (await geocodeAddress(request.origin))
   if (!originLatLng) {
     throw new Error(`出発地「${request.origin}」の位置情報を取得できませんでした`)
   }

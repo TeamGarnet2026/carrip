@@ -98,7 +98,7 @@ export async function recalculateRoute(
 ): Promise<RouteRecalculateResult> {
   const { request, stops } = input
 
-  const originLatLng = await geocodeAddress(request.origin)
+  const originLatLng = request.origin_location ?? (await geocodeAddress(request.origin))
   if (!originLatLng) {
     throw new Error(`出発地「${request.origin}」の位置情報を取得できませんでした`)
   }
