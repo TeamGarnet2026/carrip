@@ -38,11 +38,14 @@ const COST_ITEMS = [
   },
 ]
 
+// 写真は public/areas/ に配置（出典・ライセンスは ../docs/image-credits.md）。
+// color は画像の読み込み前・失敗時に見える下地。
+// widths は実際に用意してある画像幅
 const AREAS = [
-  { name: '京都', prefecture: '京都府', tags: '寺社・紅葉・日帰り向き', color: 'bg-photo-2' },
-  { name: '箱根', prefecture: '神奈川県', tags: '温泉・美術館・絶景', color: 'bg-photo-3' },
-  { name: '伊豆', prefecture: '静岡県', tags: '海岸線・グルメ', color: 'bg-photo-1' },
-  { name: '軽井沢', prefecture: '長野県', tags: '高原・体験・穴場', color: 'bg-photo-4' },
+  { name: '京都', prefecture: '京都府', tags: '寺社・紅葉・日帰り向き', color: 'bg-photo-2', slug: 'kyoto', widths: [560, 840] },
+  { name: '箱根', prefecture: '神奈川県', tags: '温泉・美術館・絶景', color: 'bg-photo-3', slug: 'hakone', widths: [560, 840] },
+  { name: '伊豆', prefecture: '静岡県', tags: '海岸線・グルメ', color: 'bg-photo-1', slug: 'izu', widths: [560, 840] },
+  { name: '軽井沢', prefecture: '長野県', tags: '高原・体験・穴場', color: 'bg-photo-4', slug: 'karuizawa', widths: [560, 840] },
 ]
 
 type RecentTrip = Awaited<ReturnType<typeof listTripsForUser>>[number]
@@ -194,9 +197,20 @@ export default async function Home() {
                   className="group block text-ink no-underline"
                 >
                   <span
-                    className={`block aspect-[4/5] rounded-2xl transition group-hover:opacity-90 ${area.color}`}
-                    aria-hidden
-                  />
+                    className={`relative block aspect-[4/5] overflow-hidden rounded-2xl transition group-hover:opacity-90 ${area.color}`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={`/areas/${area.slug}-${area.widths[area.widths.length - 1]}.jpg`}
+                      srcSet={area.widths
+                        .map((width) => `/areas/${area.slug}-${width}.jpg ${width}w`)
+                        .join(', ')}
+                      sizes="(min-width: 1240px) 280px, 22vw"
+                      alt=""
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </span>
                   <span className="mt-3 block text-lg font-bold">{area.name}</span>
                   <span className="block text-[13px] text-muted">{area.tags}</span>
                 </Link>
