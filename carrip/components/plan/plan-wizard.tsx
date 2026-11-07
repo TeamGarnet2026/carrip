@@ -6,6 +6,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { BudgetInput } from '@/components/form/budget-input'
 import { DateRangePicker } from '@/components/form/date-range-picker'
 import { DestinationPicker } from '@/components/form/destination-picker'
+import { OriginSearchInput } from '@/components/form/origin-search-input'
 import { PreferenceSelector } from '@/components/form/preference-selector'
 import { VehicleSelector } from '@/components/form/vehicle-selector'
 import { Stepper } from '@/components/layout/page-header'
@@ -26,16 +27,29 @@ type PlanWizardProps = {
   initialStep: number
   /** トップのクイック入力などから引き継いだ値 */
   initialValues?: Partial<
-    Pick<TripFormValues, 'origin' | 'departureDate' | 'days' | 'people' | 'prefecture'>
+    Pick<
+      TripFormValues,
+      'origin' | 'originPlace' | 'departureDate' | 'days' | 'people' | 'prefecture'
+    >
   > & { vehicleType?: string }
 }
 
-function validateStep(step: number, form: TripFormValues): Record<string, string> {
+/**
+ * originConfirmed は、候補が出ないときに入力した地名をそのまま使うと決めたか
+ * （候補から選んでいれば form.originPlace が入る）
+ */
+function validateStep(
+  step: number,
+  form: TripFormValues,
+  originConfirmed: boolean
+): Record<string, string> {
   const errors: Record<string, string> = {}
 
   if (step === 1) {
     if (!form.origin.trim()) {
       errors.origin = '出発地を入力してください'
+    } else if (!form.originPlace && !originConfirmed) {
+      errors.origin = '候補から出発地を選んでください'
     }
     if (!form.departureDate) {
       errors.departureDate = '出発日を選択してください'
@@ -77,6 +91,12 @@ function validateStep(step: number, form: TripFormValues): Record<string, string
   return errors
 }
 
+function originPlaceSummary(origin: string, prefecture: string | undefined): string {
+  return prefecture
+    ? `${prefecture}の「${origin}」から出発します`
+    : `「${origin}」から出発します`
+}
+
 function vehicleLabel(type: string): string {
   return VEHICLE_PRESETS.find((item) => item.id === type)?.label ?? type
 }
@@ -94,6 +114,7 @@ function buildInitialForm(initialValues: PlanWizardProps['initialValues']): Trip
   return {
     ...form,
     origin: initialValues.origin ?? form.origin,
+    originPlace: initialValues.originPlace,
     departureDate: initialValues.departureDate ?? form.departureDate,
     days: initialValues.days ?? form.days,
     people: initialValues.people ?? form.people,
@@ -118,8 +139,15 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
   const [form, setForm] = useState<TripFormValues>(() => buildInitialForm(initialValues))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [locating, setLocating] = useState(false)
+  // 出発地の入力を飛ばして開いたときは、引き継ぎ元で出発地が確定済み
+  const [originConfirmed, setOriginConfirmed] = useState(
+    Boolean(initialValues?.origin) && initialStep > 1
+  )
 
-  const stepErrors = useMemo(() => validateStep(step, form), [step, form])
+  const stepErrors = useMemo(
+    () => validateStep(step, form, originConfirmed),
+    [step, form, originConfirmed]
+  )
 
   function updateForm(patch: Partial<TripFormValues>) {
     setForm((current) => ({ ...current, ...patch }))
@@ -130,7 +158,7 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
   }
 
   function handleNext() {
-    const nextErrors = validateStep(step, form)
+    const nextErrors = validateStep(step, form, originConfirmed)
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) return
     setStep((current) => Math.min(4, current + 1))
@@ -143,7 +171,7 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
 
   function handleSubmit() {
     for (let current = 1; current <= 3; current += 1) {
-      const validation = validateStep(current, form)
+      const validation = validateStep(current, form, originConfirmed)
       if (Object.keys(validation).length > 0) {
         setStep(current)
         setErrors(validation)
@@ -175,6 +203,10 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
             position.coords.latitude,
             position.coords.longitude
           ),
+          originPlace: {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          },
         })
       },
       (error) => {
@@ -249,14 +281,40 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
               <div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                   <div className="flex-1">
-                    <Input
-                      label="出発地"
-                      placeholder="京都駅"
+                    <label
+                      htmlFor="plan-origin"
+                      className="mb-2 block text-sm font-semibold text-ink"
+                    >
+                      出発地
+                    </label>
+                    <OriginSearchInput
+                      id="plan-origin"
                       value={form.origin}
-                      errorMessage={errors.origin}
-                      helperText="候補から選ぶか、地名をそのまま入力してください"
-                      onChange={(origin) => updateForm({ origin })}
+                      place={form.originPlace}
+                      invalid={Boolean(errors.origin)}
+                      onChange={(origin, originPlace) => {
+                        setOriginConfirmed(false)
+                        updateForm({ origin, originPlace })
+                      }}
+                      onUseTypedText={(origin) => {
+                        setOriginConfirmed(true)
+                        updateForm({ origin, originPlace: undefined })
+                      }}
                     />
+                    {errors.origin ? (
+                      <p
+                        className="mt-2 mb-0 text-[13px] font-medium text-cost-admission"
+                        role="alert"
+                      >
+                        {errors.origin}
+                      </p>
+                    ) : (
+                      <p className="mt-2 mb-0 text-[13px] text-muted">
+                        {form.originPlace
+                          ? originPlaceSummary(form.origin, form.originPlace.prefecture)
+                          : '駅名・地名・住所を入力し、表示された候補から選んでください'}
+                      </p>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -422,7 +480,7 @@ export function PlanWizard({ initialStep, initialValues }: PlanWizardProps) {
             <dl className="m-0 border-t border-line">
               <SummaryRow
                 label="出発地・日程"
-                value={`${form.origin} · ${formatJapaneseDate(form.departureDate)}${form.options.departureTime.replace(/^0/, '')}`}
+                value={`${form.originPlace?.prefecture ? `${form.originPlace.prefecture} ` : ''}${form.origin} · ${formatJapaneseDate(form.departureDate)}${form.options.departureTime.replace(/^0/, '')}`}
                 detail={formatTripLength(form.days)}
                 onChange={() => setStep(1)}
               />

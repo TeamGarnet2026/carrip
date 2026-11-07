@@ -2,8 +2,11 @@
 
 import { useRouter } from 'next/navigation'
 import { useId, useState, type FormEvent } from 'react'
+import { OriginSearchInput } from '@/components/form/origin-search-input'
 import { ArrowRightIcon } from '@/components/ui/icons'
 import { VEHICLE_PRESETS } from '@/lib/plan/constants'
+import { setOriginPlaceParams } from '@/lib/plan/origin-params'
+import type { OriginPlace } from '@/lib/plan/types'
 
 function tomorrowIso(): string {
   const date = new Date()
@@ -33,6 +36,8 @@ export function QuickStartForm() {
     vehicle: useId(),
   }
   const [origin, setOrigin] = useState('')
+  const [originPlace, setOriginPlace] = useState<OriginPlace>()
+  const [originConfirmed, setOriginConfirmed] = useState(false)
   const [date, setDate] = useState(tomorrowIso)
   const [days, setDays] = useState(1)
   const [people, setPeople] = useState(4)
@@ -40,33 +45,45 @@ export function QuickStartForm() {
 
   function handleSubmit(event: FormEvent) {
     event.preventDefault()
+    // 候補から選んでいない出発地は、条件入力の最初の画面で選び直してもらう
+    const ready = Boolean(origin.trim()) && (Boolean(originPlace) || originConfirmed)
     const params = new URLSearchParams({
-      step: origin.trim() ? '2' : '1',
+      step: ready ? '2' : '1',
       date,
       days: String(days),
       people: String(people),
       vehicle,
     })
     if (origin.trim()) params.set('origin', origin.trim())
+    setOriginPlaceParams(params, originPlace)
     router.push(`/plan/new?${params.toString()}`)
   }
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="grid overflow-hidden rounded-2xl border border-line bg-surface md:grid-cols-[1.6fr_1.2fr_0.8fr_0.8fr_1fr_auto] md:items-stretch"
+      className="grid rounded-2xl border border-line bg-surface md:grid-cols-[1.6fr_1.2fr_0.8fr_0.8fr_1fr_auto] md:items-stretch"
     >
       <div className="border-b border-line px-5 py-3.5 md:border-r md:border-b-0">
         <label htmlFor={ids.origin} className={fieldLabel}>
           出発地
         </label>
-        <input
+        <OriginSearchInput
           id={ids.origin}
+          variant="bare"
           value={origin}
-          onChange={(event) => setOrigin(event.target.value)}
+          place={originPlace}
           placeholder="京都駅"
-          className={fieldControl}
-          style={{ backgroundColor: 'transparent' }}
+          onChange={(nextOrigin, nextPlace) => {
+            setOrigin(nextOrigin)
+            setOriginPlace(nextPlace)
+            setOriginConfirmed(false)
+          }}
+          onUseTypedText={(typed) => {
+            setOrigin(typed)
+            setOriginPlace(undefined)
+            setOriginConfirmed(true)
+          }}
         />
       </div>
       <div className="grid grid-cols-2 md:contents">

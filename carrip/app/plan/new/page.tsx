@@ -1,12 +1,16 @@
 import { Suspense } from 'react'
 import { AppShell } from '@/components/layout/app-shell'
 import { PlanWizard } from '@/components/plan/plan-wizard'
+import { parseOriginPlaceParams } from '@/lib/plan/origin-params'
 import { PREFECTURE_META } from '@/lib/plan/prefecture-meta'
 
 type PlanNewPageProps = {
   searchParams: Promise<{
     step?: string
     origin?: string
+    origin_lat?: string
+    origin_lng?: string
+    origin_pref?: string
     date?: string
     days?: string
     people?: string
@@ -31,8 +35,10 @@ function parseInitialValues(params: Awaited<PlanNewPageProps['searchParams']>) {
   const date = /^\d{4}-\d{2}-\d{2}$/.test(params.date ?? '') ? params.date : undefined
   const prefecture =
     params.prefecture && PREFECTURE_META[params.prefecture] ? [params.prefecture] : undefined
+  const origin = params.origin?.trim().slice(0, 100) || undefined
   return {
-    origin: params.origin?.trim().slice(0, 100) || undefined,
+    origin,
+    originPlace: origin ? parseOriginPlaceParams(params) : undefined,
     departureDate: date,
     days: clampInt(params.days, 1, 7),
     people: clampInt(params.people, 1, 15),

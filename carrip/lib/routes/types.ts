@@ -84,6 +84,8 @@ export type RouteCandidate = {
 
 export type RouteGenerateRequest = {
   origin: string
+  /** 出発地を候補から選んだときの座標（ない場合は origin から位置を調べる） */
+  origin_location?: { lat: number; lng: number }
   prefecture: string[]
   departure_date: string
   days: number

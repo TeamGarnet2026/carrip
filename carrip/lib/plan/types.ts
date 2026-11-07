@@ -6,8 +6,17 @@ import type {
 
 export type StopOrderMode = 'auto' | 'manual'
 
+export type OriginPlace = {
+  lat: number
+  lng: number
+  /** 例: 京都府。現在地など都道府県が分からないときは undefined */
+  prefecture?: string
+}
+
 export type TripFormValues = {
   origin: string
+  /** 出発地を候補から選んだ（または現在地を使った）ときの位置。手入力のままなら undefined */
+  originPlace?: OriginPlace
   prefecture: string[]
   departureDate: string
   days: number
@@ -83,6 +92,9 @@ export function toRouteGenerateRequest(
 
   return {
     origin: form.origin,
+    ...(form.originPlace
+      ? { origin_location: { lat: form.originPlace.lat, lng: form.originPlace.lng } }
+      : {}),
     prefecture: form.prefecture,
     departure_date: form.departureDate,
     days: form.days,

@@ -15,6 +15,7 @@ import { CheckIcon, CloseIcon, PlusIcon, SearchIcon } from '@/components/ui/icon
 import { Spinner } from '@/components/ui/spinner'
 import { formatJapaneseDate, formatTripLength } from '@/lib/format'
 import { PREFERENCE_OPTIONS, VEHICLE_PRESETS } from '@/lib/plan/constants'
+import { setOriginPlaceParams } from '@/lib/plan/origin-params'
 import {
   loadPlanSession,
   planStorageKey,
@@ -124,6 +125,7 @@ function editConditionsHref(form: TripFormValues): string {
     people: String(form.people),
     vehicle: form.vehicle.type,
   })
+  setOriginPlaceParams(params, form.originPlace)
   if (form.prefecture[0]) params.set('prefecture', form.prefecture[0])
   return `/plan/new?${params.toString()}`
 }
