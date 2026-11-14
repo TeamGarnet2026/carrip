@@ -64,10 +64,10 @@ export default async function TripsPage() {
         <li>
           <Link
             href="/plan/new?step=1"
-            className="flex h-full min-h-[280px] flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-line-strong text-ink-soft no-underline transition hover:border-muted hover:text-ink"
+            className="flex h-full flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-line-strong p-6 text-sm text-ink-soft no-underline transition hover:border-muted hover:text-ink"
           >
-            <span className="grid h-14 w-14 place-items-center rounded-full border border-line-strong">
-              <PlusIcon className="h-6 w-6" />
+            <span className="grid h-10 w-10 place-items-center rounded-full border border-line-strong">
+              <PlusIcon className="h-5 w-5" />
             </span>
             {trips.length === 0 ? '最初の旅行を計画する' : '次の旅行を計画する'}
           </Link>

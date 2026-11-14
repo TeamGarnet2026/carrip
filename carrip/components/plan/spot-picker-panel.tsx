@@ -216,16 +216,25 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
         ) {
           return
         }
+        const origin = current.form.originPlace
         const picked = pickRecommendedSpots(
           data.places as SpotCandidate[],
-          recommendedSpotCount(current.form.days)
+          recommendedSpotCount(current.form.days),
+          {
+            origin: origin
+              ? { lat: origin.lat, lng: origin.lng }
+              : undefined,
+            roundTrip: current.form.options.roundTrip,
+          }
         ).map(toRouteStop)
         setSelected(picked)
+        setOrderMode('auto')
         setAutoPicked(true)
         // 行き先が変わったら、以前計算したルートは使えない
         savePlanSession({
           ...current,
           spots: picked,
+          orderMode: 'auto',
           spotSelectMode: mode,
           spotsAutoPicked: true,
           routes: undefined,
@@ -277,16 +286,23 @@ export function SpotPickerPanel({ planId }: SpotPickerPanelProps) {
     persist(selected, nextOrderMode)
   }
 
-  /** おすすめの上位を、旅行日数に応じた件数だけ選択済みにする */
+  /** おすすめから、車で回りやすい順に日数分を選択済みにする */
   function applyRecommendations(places: SpotCandidate[]) {
     if (!session) return
-    const picked = pickRecommendedSpots(places, recommendedSpotCount(session.form.days)).map(
-      toRouteStop
-    )
+    const origin = session.form.originPlace
+    const picked = pickRecommendedSpots(
+      places,
+      recommendedSpotCount(session.form.days),
+      {
+        origin: origin ? { lat: origin.lat, lng: origin.lng } : undefined,
+        roundTrip: session.form.options.roundTrip,
+      }
+    ).map(toRouteStop)
     setSelected(picked)
     setSelectMode('auto')
+    setOrderMode('auto')
     setAutoPicked(true)
-    persist(picked, orderMode, { spotSelectMode: 'auto', spotsAutoPicked: true })
+    persist(picked, 'auto', { spotSelectMode: 'auto', spotsAutoPicked: true })
   }
 
   function changeSelectMode(next: SpotSelectMode) {
